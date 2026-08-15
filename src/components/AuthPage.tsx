@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Activity, Mail, Lock, User, ArrowRight, Stethoscope, Heart, Building2, Shield } from 'lucide-react';
 import { signUp, signIn, type UserRole } from '../hooks/useAuth';
 
-export default function AuthPage() {
+export default function AuthPage({ onBypass }: { onBypass: (role: UserRole) => void }) {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -182,6 +182,45 @@ export default function AuthPage() {
               )}
             </button>
           </form>
+
+          {/* Sandbox Bypass Panel */}
+          <div className="px-6 pb-6 pt-2 border-t border-slate-50 bg-slate-50/20">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block text-center mb-2.5">Developer Sandbox Bypass</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => onBypass('super_admin')}
+                id="bypass-super-admin"
+                className="py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold rounded-lg text-slate-700 transition shadow-sm"
+              >
+                Super Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => onBypass('clinic_admin')}
+                id="bypass-clinic-admin"
+                className="py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold rounded-lg text-slate-700 transition shadow-sm"
+              >
+                Clinic Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => onBypass('nurse')}
+                id="bypass-nurse"
+                className="py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold rounded-lg text-slate-700 transition shadow-sm"
+              >
+                Nurse Role
+              </button>
+              <button
+                type="button"
+                onClick={() => onBypass('doctor')}
+                id="bypass-doctor"
+                className="py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold rounded-lg text-slate-700 transition shadow-sm"
+              >
+                Doctor Role
+              </button>
+            </div>
+          </div>
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">

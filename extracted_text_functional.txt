@@ -1,0 +1,1906 @@
+WOUND CARE AI PLATFORM
+Screen-by-Screen Functional Requirements
+Functional behavior specification for UI/UX finalization and later development
+How to use this documentEach screen is written as a self-contained mini-spec. You can paste one screen section into an AI design or coding tool without supplying the entire application. The UI mockup requirements document defines visual direction; this document defines what each screen must actually do.
+
+Important clinical rule principleDo not hardcode thresholds such as age &gt; X, wound growth &gt; X%, necrotic tissue &gt; X%, assessment overdue &gt; X days, or urgent-review SLA &gt; X hours. Store them as versioned configuration controlled through authorized admin/clinical-governance screens.
+
+Screen Index
+ID
+Screen
+S-01
+Magic Link Login
+S-02
+Super Admin Dashboard
+S-03
+Clinic Management
+S-04
+Clinic Admin Dashboard
+S-05
+Team Management
+S-06
+Patient Directory
+S-07
+Create / Edit Patient
+S-08
+Patient Overview
+S-09
+Patient Wound List
+S-10
+Create / Edit Wound
+S-11
+Wound Profile / Healing Timeline
+S-12
+New Wound Assessment
+S-13
+Wound Photo Capture
+S-14
+AI Analysis Review
+S-15
+Assessment Comparison
+S-16
+Urgent Review Queue / Command Center
+S-17
+Alerts &amp; Tasks
+S-18
+Reports
+S-19
+Rule Configuration
+S-20
+Rule Editor
+S-21
+Reference Data Configuration
+S-22
+Audit Log
+S-23
+Patient Home Check-in (Future)
+
+
+S-01 — Magic Link Login
+Screen purposeAuthenticate staff securely and route them into the correct clinic workspace.
+
+Item
+Requirement
+Primary roles
+All staff users
+Primary entry points
+Direct URL, invitation link, expired-session redirect
+Primary outcome
+Authenticated session in an authorized organization workspace
+Phase
+MVP
+
+A. Information / UI blocks
+Brand/logo area
+Email entry
+Send secure login link CTA
+Link sent confirmation
+Expired-link / retry state
+Optional language selector
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Email
+User input
+Required, normalized, never reveal whether an account exists in error wording.
+Invitation context
+System
+If opened from invite, preserve intended organization/role context.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Send secure login link
+Any user
+Request a time-limited link and show generic success message.
+Open magic link
+Invited/active user
+Validate token, user status, clinic status, and membership before creating session.
+Request new link
+Any user
+Invalidate/replace expired flow as appropriate and resend.
+
+D. Permissions
+Only active users in active clinics can enter the workspace.
+If a user belongs to more than one organization, require organization selection after authentication.
+E. Business rules / functional logic
+Expired/used tokens cannot create a session.
+Do not expose whether an email is registered.
+Successful and failed/blocked authentication attempts should be logged at an appropriate level.
+F. Admin-controlled / configurable values
+Session timeout duration.
+MFA requirement by role.
+Language options.
+G. Loading, empty, validation, and error states
+Unknown email: generic success response.
+Expired link: explain and offer resend.
+Deactivated user or clinic: block access with support message.
+Network failure: preserve email and allow retry.
+H. What happens next / downstream dependencies
+Route to default role homepage: Super Admin dashboard, Clinic Admin dashboard, or clinical Command Center.
+I. Mockup / UX notes
+Keep visually minimal.
+No patient data on login.
+Mobile-friendly.
+
+S-02 — Super Admin Dashboard
+Screen purposeGive platform operators an operational overview without turning the page into a clinical patient browser.
+
+Item
+Requirement
+Primary roles
+Super Admin
+Primary entry points
+Post-login landing page
+Primary outcome
+Identify clinics/accounts needing administrative attention
+Phase
+MVP
+
+A. Information / UI blocks
+Platform KPIs
+Clinic status summary
+Recent organization/admin activity
+Clinic search/list preview
+System issue/usage panel
+Create Clinic CTA
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Total clinics
+Calculated
+Count by active/inactive state.
+Active users
+Calculated
+Platform-level operational metric.
+Patients / wounds
+Calculated aggregate
+Aggregate only on default view; do not expose clinical details.
+Clinic status
+Organization data
+Active, inactive, onboarding, etc.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Create Clinic
+Super Admin
+Open clinic creation workflow.
+Open Clinic
+Super Admin
+Open clinic admin/detail screen.
+Deactivate / Reactivate
+Super Admin
+Require confirmation/reason and audit.
+
+D. Permissions
+Super Admin can manage organizations globally.
+Default dashboard should not expose individual patient clinical records.
+E. Business rules / functional logic
+Counts must define whether they are clinics, users, patients, or wounds.
+Clinic deactivation blocks ordinary clinic access but does not delete records.
+F. Admin-controlled / configurable values
+Platform status labels.
+Organization types.
+Optional usage thresholds later.
+G. Loading, empty, validation, and error states
+No clinics: onboarding empty state with Create Clinic.
+Metrics unavailable: show partial dashboard without blocking clinic management.
+H. What happens next / downstream dependencies
+Clinic creation -&gt; Clinic Management.
+Clinic open -&gt; Clinic detail/admin view.
+I. Mockup / UX notes
+Enterprise SaaS feel.
+Operational rather than clinical.
+Avoid too many charts.
+
+S-03 — Clinic Management
+Screen purposeCreate and manage healthcare organizations and their initial administrators.
+
+Item
+Requirement
+Primary roles
+Super Admin
+Primary entry points
+Super Admin dashboard, Clinics navigation
+Primary outcome
+Clinic created/updated/deactivated with traceable admin ownership
+Phase
+MVP
+
+A. Information / UI blocks
+Clinic table/list
+Search and status/type filters
+Create Clinic CTA
+Clinic detail drawer/page
+Primary administrator section
+Status and activity metadata
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Clinic name
+Text
+Required.
+Organization type
+Configurable list
+Hospital, wound clinic, home health, etc.
+Location
+Text/structured
+Country, region, city as required.
+Primary admin
+User/email
+Invite or assign initial admin.
+Status
+Configurable/system
+Active/inactive/onboarding.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Create Clinic
+Super Admin
+Validate required fields, create organization, optionally invite initial admin.
+Edit Clinic
+Super Admin
+Update profile and audit changed values.
+Deactivate
+Super Admin
+Require confirmation/reason; block clinic user access without deleting data.
+Reactivate
+Super Admin
+Restore clinic access if authorized.
+
+D. Permissions
+Only Super Admin manages platform organizations.
+E. Business rules / functional logic
+Clinic name duplication may warn but does not necessarily block.
+Deactivation never deletes patient/wound history.
+Primary admin invitation status should be visible.
+F. Admin-controlled / configurable values
+Organization types.
+Clinic statuses.
+Default country/region settings.
+G. Loading, empty, validation, and error states
+No matching clinics after filter: clear empty state.
+Invite failure: clinic still exists; allow resend.
+H. What happens next / downstream dependencies
+Create/assign staff -&gt; Team Management.
+Open clinic -&gt; Clinic Admin-style detail/summary.
+I. Mockup / UX notes
+Use searchable enterprise table.
+Prefer side drawer for quick edits; full page for deeper settings.
+
+S-04 — Clinic Admin Dashboard
+Screen purposeShow one clinic’s operational situation and what requires attention.
+
+Item
+Requirement
+Primary roles
+Clinic Admin
+Primary entry points
+Post-login landing for Clinic Admin
+Primary outcome
+Navigate quickly to patients, staff, overdue items, and review workload
+Phase
+MVP
+
+A. Information / UI blocks
+Clinic KPIs
+Needs attention summary
+Overdue assessments
+Pending reviews
+Staff snapshot
+Recent clinic activity
+Quick actions
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Active patients
+Calculated
+Clinic-scoped.
+Active wounds
+Calculated
+Clinic-scoped active/healing wounds.
+Need review
+Calculated
+Open review/urgent/critical items.
+Overdue assessments
+Calculated
+Uses configured assessment interval.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Add Patient
+Clinic Admin if permitted
+Open patient creation.
+Invite Staff
+Clinic Admin
+Open invite workflow.
+Open Review Queue
+Clinic Admin if clinically permitted
+View clinic cases needing review.
+Open Reports
+Clinic Admin
+Open reporting.
+
+D. Permissions
+All data limited to current clinic.
+Clinical details shown only if Clinic Admin role includes clinical access.
+E. Business rules / functional logic
+Dashboard counts must have explicit definitions.
+Overdue calculations use active configuration, not hardcoded days.
+F. Admin-controlled / configurable values
+Routine assessment interval.
+Which dashboard modules are visible by clinic role.
+Operational alert SLA.
+G. Loading, empty, validation, and error states
+No active patients: onboarding state.
+No overdue/review items: “caught up” state.
+H. What happens next / downstream dependencies
+Patient/alert clicks -&gt; Patient Overview or Review Queue.
+Staff -&gt; Team Management.
+I. Mockup / UX notes
+Operational command center.
+Do not duplicate doctor dashboard if admin is not a clinician.
+
+S-05 — Team Management
+Screen purposeInvite, assign roles, deactivate, and manage staff within one clinic.
+
+Item
+Requirement
+Primary roles
+Clinic Admin
+Primary entry points
+Team navigation, Clinic Admin dashboard
+Primary outcome
+Accurate clinic membership and role assignments
+Phase
+MVP
+
+A. Information / UI blocks
+Staff table
+Search
+Role/status filters
+Invite Staff modal
+Pending invitations
+User detail/edit drawer
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Name
+User profile
+Display.
+Email
+User/auth
+Invitation/login identity.
+Role
+Membership
+Clinic Admin, Doctor, Wound Specialist, Nurse, Read-only.
+Status
+Membership
+Active, pending, deactivated.
+Last login
+System
+Operational metadata.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Invite Staff
+Clinic Admin
+Enter email + role; create/send invitation.
+Resend Invite
+Clinic Admin
+Resend active invitation; update audit.
+Change Role
+Clinic Admin
+Apply permissions immediately and audit old/new role.
+Deactivate
+Clinic Admin
+Block future clinic access while preserving history.
+Reactivate
+Clinic Admin
+Restore access under selected role.
+
+D. Permissions
+Clinic Admin cannot manage users outside own clinic.
+Cannot remove the final required admin without replacement if product policy requires one.
+E. Business rules / functional logic
+Changing a role changes authorization immediately.
+Deactivated users remain named as historical authors/reviewers.
+F. Admin-controlled / configurable values
+Available roles.
+Role permission templates later.
+Invitation expiry duration.
+G. Loading, empty, validation, and error states
+Invite duplicate active user: explain membership already exists.
+Email delivery failure: show retry.
+No staff: onboarding empty state.
+H. What happens next / downstream dependencies
+Invited user -&gt; Login/acceptance.
+Role changes affect all subsequent screen access.
+I. Mockup / UX notes
+Modern team-management UX.
+Pending invitation state must be visually distinct.
+
+S-06 — Patient Directory
+Screen purposeLet permitted clinical users quickly find and prioritize patients.
+
+Item
+Requirement
+Primary roles
+Doctor, Wound Specialist, Nurse, Clinic Admin if permitted
+Primary entry points
+Patients navigation, dashboard links
+Primary outcome
+Open the correct patient or create a new one
+Phase
+MVP
+
+A. Information / UI blocks
+Global clinic patient search
+Filters
+Sortable/paginated patient table or list
+Status/risk indicators
+Add Patient CTA
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Patient name
+Patient
+Display only.
+MRN
+Patient
+Primary clinical identifier.
+Age
+Calculated from DOB
+Display.
+Active wounds
+Calculated
+Count.
+Last assessment
+Calculated
+Latest finalized/submitted according to policy.
+Clinical status/risk
+Rules/config
+Explainable indicator.
+Assigned clinician
+Optional assignment
+Filterable if used.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Search
+Permitted users
+Search name/MRN and other approved fields within clinic.
+Filter / Sort
+Permitted users
+Filter risk, status, wound type, overdue, clinician.
+Open Patient
+Permitted users
+Open Patient Overview.
+Add Patient
+Permitted users
+Open patient form.
+
+D. Permissions
+Results must be tenant-scoped.
+Assignment-based restrictions should be enforced if enabled.
+E. Business rules / functional logic
+High-risk status must come from approved rules/definitions.
+Search must not reveal other-clinic records.
+F. Admin-controlled / configurable values
+Available filters.
+Risk bands/status labels.
+Page size.
+G. Loading, empty, validation, and error states
+No results: show filter/search empty state.
+Unauthorized record via URL: generic not found/unauthorized.
+Loading: skeleton rows.
+H. What happens next / downstream dependencies
+Open -&gt; Patient Overview.
+Add -&gt; Create Patient.
+I. Mockup / UX notes
+Fast scanning matters more than decorative cards.
+Urgency should be visible but restrained.
+
+S-07 — Create / Edit Patient
+Screen purposeCapture the minimum patient identity plus clinically useful risk data without overwhelming the user.
+
+Item
+Requirement
+Primary roles
+Doctor, Nurse, Clinic Admin if permitted
+Primary entry points
+Add Patient CTA, Edit Patient action
+Primary outcome
+Valid patient record saved under the current clinic
+Phase
+MVP
+
+A. Information / UI blocks
+Patient identity section
+Contact section
+Clinical profile
+Risk factors
+Labs/vascular data as optional/later
+Save/Cancel
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+MRN
+Text
+Required/unique within clinic if configured.
+Name
+Text
+Required identity.
+DOB
+Date
+Required if approved; age derived.
+Sex
+Configurable
+Clinical context.
+Phone/email
+Contact
+Optional/required by workflow.
+Diabetes/PAD/neuropathy/CKD/dialysis/smoking/previous amputation etc.
+Structured clinical data
+Used only if clinically approved.
+HbA1c/labs
+Value + unit + date
+Must include recency context if used in rules.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Save Patient
+Permitted users
+Validate required fields and create/update.
+Cancel
+Permitted users
+Return without changes; warn if unsaved.
+Add risk factor/lab
+Permitted users
+Store structured value and date/context.
+
+D. Permissions
+Only permitted clinic users may create/edit.
+Some clinical fields may be restricted to clinical roles.
+E. Business rules / functional logic
+Potential duplicate within clinic should warn.
+Exact duplicate MRN can block if clinic policy requires uniqueness.
+Do not delete historical clinical facts silently; correct/inactivate where appropriate.
+F. Admin-controlled / configurable values
+Required vs optional fields.
+Reference lists.
+MRN uniqueness policy.
+Risk variables and lab freshness rules.
+G. Loading, empty, validation, and error states
+Missing required field: inline validation.
+Potential duplicate: warning with existing matches.
+Save failure: preserve form input.
+H. What happens next / downstream dependencies
+Successful create -&gt; Patient Overview.
+Edit -&gt; return to current patient screen.
+I. Mockup / UX notes
+Progressive sections/accordions.
+Do not show every possible field at once.
+Mobile-friendly.
+
+S-08 — Patient Overview
+Screen purposeProvide a concise clinical summary of the patient and active wound situation.
+
+Item
+Requirement
+Primary roles
+Doctor, Wound Specialist, Nurse, Clinic Admin if clinically permitted
+Primary entry points
+Patient Directory, alerts, search
+Primary outcome
+Choose the wound or clinical action that requires attention
+Phase
+MVP
+
+A. Information / UI blocks
+Patient header
+Risk-factor summary
+Patient tabs
+Key metrics
+Active wounds
+Open alerts
+Recent activity
+Clinical risk explanation
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Identity/MRN/age/sex
+Patient
+Header.
+Risk factors
+Patient clinical data
+Show key approved drivers.
+Active wound cards
+Wound + latest assessment
+Location/type/image/latest size/status/trend.
+Last/next review
+Assessment/config
+Operational schedule.
+Open alerts
+Alert engine
+Show reason/severity.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Edit Patient
+Permitted users
+Open edit form.
+Add Wound
+Doctor/Nurse
+Open Create Wound.
+View Wound
+Permitted users
+Open Wound Profile.
+Open Alert
+Permitted users
+Open alert context/review.
+
+D. Permissions
+No data outside current clinic.
+Sensitive clinical tabs shown according to role.
+E. Business rules / functional logic
+Risk label must be explainable.
+Closed wounds remain in history but are separated from active wounds.
+F. Admin-controlled / configurable values
+Risk status/bands.
+Which risk factors are surfaced prominently.
+Next-review scheduling logic.
+G. Loading, empty, validation, and error states
+No active wounds: show Add Wound empty state.
+Missing risk data: do not infer; show incomplete if useful.
+H. What happens next / downstream dependencies
+Wound -&gt; Wound Profile.
+Assessment -&gt; Assessment detail/AI review.
+Clinical tab -&gt; structured patient data.
+I. Mockup / UX notes
+Dense but calm.
+Use hierarchy, not dozens of equal cards.
+
+S-09 — Patient Wound List
+Screen purposeShow all wound episodes for one patient, including active and historical wounds.
+
+Item
+Requirement
+Primary roles
+Doctor, Wound Specialist, Nurse
+Primary entry points
+Patient Overview &gt; Wounds tab
+Primary outcome
+Open an existing wound or create a new episode
+Phase
+MVP
+
+A. Information / UI blocks
+Active wounds section
+Historical/closed wounds section
+Search/filter if many wounds
+Add Wound CTA
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Thumbnail
+Latest wound image
+Use secure thumbnail.
+Location/type
+Wound record
+Primary identity.
+Date first observed
+Wound record
+Duration context.
+Latest area/trend
+Assessment
+Only if valid measurements exist.
+Status
+Wound
+Active/healed/etc.
+Last assessment
+Assessment
+Date/time.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Open Wound
+Permitted user
+Open Wound Profile.
+Add Wound
+Doctor/Nurse
+Create new wound episode.
+Close/Reopen
+Authorized clinician
+Use explicit lifecycle workflow.
+
+D. Permissions
+Creation/closure rights may differ by role.
+E. Business rules / functional logic
+Same anatomical location can have separate episodes; user must explicitly choose reopen vs new episode when relevant.
+Closed wounds should not trigger routine overdue logic.
+F. Admin-controlled / configurable values
+Wound statuses.
+Closure reasons.
+G. Loading, empty, validation, and error states
+No wounds: Add Wound empty state.
+Missing photo/measurement: show neutral placeholder, not fake values.
+H. What happens next / downstream dependencies
+Open -&gt; Wound Profile.
+Add -&gt; Create Wound.
+I. Mockup / UX notes
+Make multiple wounds easy to distinguish.
+Avoid ecommerce-style image gallery.
+
+S-10 — Create / Edit Wound
+Screen purposeCreate a distinct wound episode with sufficient structured context for future assessments and reporting.
+
+Item
+Requirement
+Primary roles
+Doctor, Nurse
+Primary entry points
+Patient Overview or Wound List
+Primary outcome
+New or updated wound episode
+Phase
+MVP
+
+A. Information / UI blocks
+Location/laterality
+Wound type
+Onset date
+Status
+Optional classification/staging
+Notes
+Save/Cancel
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Anatomical location
+Configurable hierarchy
+Required if approved.
+Side
+Configurable
+Left/right/midline/NA.
+Wound type
+Configurable
+DFU, pressure injury, venous, etc.
+First observed date
+Date
+Used for duration.
+Status
+Configurable
+Active/healing/etc.
+Classification/stage
+Configurable by wound type
+Show conditionally.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Save
+Doctor/Nurse
+Validate and create/update episode.
+Cancel
+Doctor/Nurse
+Return without changes.
+Close wound
+Authorized clinician
+If editing active wound, invoke closure workflow rather than simple status edit.
+
+D. Permissions
+Only permitted clinic roles may create/edit.
+Closure/reopen may require clinician-level permission.
+E. Business rules / functional logic
+Changing wound type after assessments exist should be audited and may require confirmation.
+Conditional fields should appear based on wound type.
+F. Admin-controlled / configurable values
+Wound types.
+Anatomical locations.
+Classification systems.
+Statuses.
+G. Loading, empty, validation, and error states
+Missing required data: inline error.
+Potential same-location active wound: warn but do not automatically merge.
+H. What happens next / downstream dependencies
+Create -&gt; Wound Profile or first Assessment.
+I. Mockup / UX notes
+Keep form short.
+Use conditional fields rather than giant form.
+
+S-11 — Wound Profile / Healing Timeline
+Screen purposeMake longitudinal wound progression visually understandable and provide the primary entry to new assessment and comparison workflows.
+
+Item
+Requirement
+Primary roles
+Doctor, Wound Specialist, Nurse
+Primary entry points
+Patient wound list, alerts, search
+Primary outcome
+Understand progression and decide whether to assess, compare, or review
+Phase
+MVP
+
+A. Information / UI blocks
+Wound header/status
+Latest image
+Current measurements
+Change from prior/baseline
+Assessment timeline
+Trend chart
+AI-assisted change summary
+Open alerts
+New Assessment / Compare actions
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Latest image
+Wound image
+Secure thumbnail/original view.
+Length/width/depth/area
+Latest approved assessment
+Show source if AI/manual.
+Tissue %
+Latest approved assessment
+If captured.
+Change %
+Calculated
+Explicit comparison basis.
+Timeline assessments
+Assessment history
+Finalized/current-approved records by default.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+New Assessment
+Doctor/Nurse
+Create Draft Assessment.
+Compare
+Permitted clinician
+Open Assessment Comparison with selected dates.
+Open assessment
+Permitted user
+View assessment/AI review detail.
+Close/Reopen wound
+Authorized clinician
+Invoke explicit lifecycle workflow.
+
+D. Permissions
+All data clinic-scoped.
+Draft/invalid assessments may be visible but clearly separated.
+E. Business rules / functional logic
+Trend calculation must handle missing/zero prior values safely.
+Amended values replace superseded values in main trend while original remains auditable.
+Closed wound stops overdue scheduling.
+F. Admin-controlled / configurable values
+Comparison mode: previous vs baseline.
+Trend thresholds for status labeling.
+Assessment interval by wound type/risk.
+G. Loading, empty, validation, and error states
+No assessments: prompt First Assessment.
+Missing measurement: show “not recorded,” not zero.
+Image unavailable: retain measurements/timeline.
+H. What happens next / downstream dependencies
+New Assessment -&gt; S-12.
+Compare -&gt; S-15.
+AI summary -&gt; S-14 if review required.
+I. Mockup / UX notes
+Signature screen.
+Wound photographs should dominate evidence, charts remain supportive.
+
+S-12 — New Wound Assessment
+Screen purposeGuide a nurse/clinician through a complete point-in-time wound assessment with draft, validation, submission, and review states.
+
+Item
+Requirement
+Primary roles
+Nurse, Doctor
+Primary entry points
+Wound Profile &gt; New Assessment
+Primary outcome
+Submitted or finalized assessment linked to one wound
+Phase
+MVP
+
+A. Information / UI blocks
+Step/section navigation
+Photo
+Measurements
+Wound bed
+Exudate
+Wound edge
+Periwound
+Symptoms
+Clinical concern
+Notes
+Review/Submit
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Assessment date/time
+System/default
+Editable only if policy allows.
+Photo
+Image
+Required/optional by policy.
+Length/width/depth
+Numeric
+Manual first; AI assist later.
+Area
+Calculated or AI-measured
+Source tracked.
+Granulation/slough/necrotic/epithelial %
+Numeric
+Validate totals according to clinical policy if used.
+Exudate/edge/periwound
+Configurable lists
+Structured.
+Pain/odor/exposed structure
+Structured
+Can feed rules if approved.
+Clinician notes
+Text
+Final narrative/context.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Save Draft
+Author/permitted clinician
+Persist without final rule/AI conclusions.
+Submit Assessment
+Author/permitted clinician
+Validate required fields and start AI/rule processing.
+Cancel Draft
+Permitted user
+Require confirmation; preserve audit as needed.
+Capture Photo
+Nurse/Doctor
+Open Camera.
+
+D. Permissions
+Draft edit rights may be broader than finalized edit rights.
+Finalization/AI approval permissions are role-configurable.
+E. Business rules / functional logic
+Autosave preferred.
+Submitted assessment should not be silently overwritten.
+AI failure cannot block manual completion.
+Rule evaluation occurs on configured trigger, typically submission/finalization.
+F. Admin-controlled / configurable values
+Required fields by wound type.
+Reference lists.
+Whether photo/marker is mandatory.
+Which values trigger rules.
+Who can finalize.
+G. Loading, empty, validation, and error states
+Required field validation before Submit.
+Network failure: retain draft/unsaved work if possible.
+Concurrent edit: warn and prevent silent overwrite.
+H. What happens next / downstream dependencies
+Photo -&gt; Camera.
+Submit -&gt; AI Analysis / Awaiting Review or Finalized based on policy.
+I. Mockup / UX notes
+Optimized for tablet/mobile.
+Progressive disclosure, not one massive form.
+
+S-13 — Wound Photo Capture
+Screen purposeStandardize wound photography and prepare images for safe comparison and computer vision.
+
+Item
+Requirement
+Primary roles
+Nurse, Doctor; Patient later
+Primary entry points
+New Assessment &gt; Capture Photo
+Primary outcome
+Confirmed original image attached to the assessment with quality/calibration metadata
+Phase
+MVP
+
+A. Information / UI blocks
+Live camera preview
+Framing guide
+Quality indicators
+Calibration marker indicator
+Capture control
+Retake/Use Photo confirmation
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Original image
+Camera/file
+Always retain source image.
+Quality status
+Image-quality engine
+Blur/focus/light/angle/wound visible.
+Marker detected
+CV/config
+Boolean/confidence.
+Capture metadata
+System
+Timestamp/device metadata as appropriate.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Capture
+Nurse/Doctor
+Take image.
+Retake
+Nurse/Doctor
+Discard unconfirmed capture and return to camera.
+Use Photo
+Nurse/Doctor
+Attach original and start processing.
+Upload file
+Permitted fallback
+Use if camera unavailable and policy permits.
+
+D. Permissions
+Only authorized user in current patient/wound context may attach image.
+E. Business rules / functional logic
+If marker required for calibrated measurement and not detected, disable/label exact automated measurements.
+Bad quality may require retake based on configurable threshold.
+Original must not be replaced by normalized/processed image.
+F. Admin-controlled / configurable values
+Image quality thresholds.
+Marker required by workflow/output type.
+Allowed file types/size.
+G. Loading, empty, validation, and error states
+Camera permission denied: instructions + upload fallback.
+Upload failure: retry without losing assessment.
+Poor quality: explain specific issue.
+H. What happens next / downstream dependencies
+Confirmed image -&gt; processing -&gt; return to Assessment or AI Review.
+I. Mockup / UX notes
+Signature mobile screen.
+Avoid generic upload UI.
+Clinical guidance should be clear and calm.
+
+S-14 — AI Analysis Review
+Screen purposePresent automated measurements/observations transparently so a clinician can accept, edit, reject, or escalate them.
+
+Item
+Requirement
+Primary roles
+Doctor, Wound Specialist; Nurse according to policy
+Primary entry points
+Submitted assessment, review queue, wound timeline
+Primary outcome
+Clinician-approved final assessment or routed specialist review
+Phase
+MVP
+
+A. Information / UI blocks
+Original image / AI overlay toggle
+Image quality/calibration status
+Measurements with source labels
+Change from previous
+Structured AI observations
+AI narrative
+Confidence/limitations
+Clinician actions
+Why flagged explanation
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+AI measurement
+CV output
+Store value + model/version/confidence.
+Manual measurement
+Clinician entry
+Clearly distinguish from AI.
+AI narrative
+LLM structured output
+Not final until reviewed.
+Original AI output
+Immutable analysis record
+Retained after edits.
+Final clinician values
+Clinical review
+Used as approved record.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Approve Assessment
+Authorized clinician
+Store approval, reviewer, timestamp, final values.
+Edit Findings
+Authorized clinician
+Create clinician-corrected final values; retain AI original.
+Reject AI Analysis
+Authorized clinician
+Mark rejected and require/manual final clinical record.
+Flag Specialist Review
+Permitted user
+Create alert/task for configured specialist role.
+Retry AI
+Authorized user/system
+Create new analysis version; do not overwrite old.
+
+D. Permissions
+Approval rights configurable by role and severity.
+Nurse may verify measurements but high-risk/urgent final approval may require doctor if configured.
+E. Business rules / functional logic
+AI does not directly finalize clinical conclusions.
+Low confidence can suppress or downgrade AI output based on configuration.
+Rule engine should use structured data, not parse free-text narrative.
+F. Admin-controlled / configurable values
+AI confidence thresholds.
+Which outputs require doctor approval.
+Which AI outputs require calibration.
+Specialist-routing rules.
+G. Loading, empty, validation, and error states
+AI unavailable/timeout: allow manual completion.
+Low confidence: clearly label; do not fabricate result.
+No prior assessment: omit change section.
+H. What happens next / downstream dependencies
+Approve -&gt; finalized assessment/timeline.
+Flag -&gt; Review Queue/Task.
+Reject -&gt; manual finalization.
+I. Mockup / UX notes
+AI should feel integrated, not chatbot-like.
+Show evidence -&gt; observation -&gt; clinician decision.
+
+S-15 — Assessment Comparison
+Screen purposeCompare two point-in-time assessments to understand wound change visually and numerically.
+
+Item
+Requirement
+Primary roles
+Doctor, Wound Specialist, Nurse
+Primary entry points
+Wound Profile &gt; Compare
+Primary outcome
+Clinical understanding of change between selected assessments
+Phase
+MVP
+
+A. Information / UI blocks
+Date selectors
+Side-by-side images
+Measurements comparison
+Tissue comparison
+Percentage/absolute change
+Optional overlay/synchronized zoom later
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Assessment A/B
+Finalized assessment
+Selectable dates.
+Images
+Assessment images
+Side by side.
+Area/length/width/depth
+Measurements
+Show source and missing states.
+Tissue values
+Assessment
+Only if captured/approved.
+Change
+Calculated
+State basis explicitly.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Select assessments
+Permitted user
+Choose two compatible assessments.
+Swap dates
+Permitted user
+Reverse left/right orientation.
+Open full assessment
+Permitted user
+Navigate to detail/AI review.
+
+D. Permissions
+Only permitted patient/wound data.
+E. Business rules / functional logic
+Do not compute invalid percentages when comparison denominator is zero/missing.
+Use approved/amended current values by default.
+F. Admin-controlled / configurable values
+Default comparison: previous/current.
+Whether to include invalid/draft assessments in selector.
+G. Loading, empty, validation, and error states
+Missing image/measurement: show unavailable.
+Same assessment selected twice: block.
+H. What happens next / downstream dependencies
+Return to Wound Profile.
+I. Mockup / UX notes
+Visual comparison first.
+Do not let charting overpower images.
+
+S-16 — Urgent Review Queue / Command Center
+Screen purposePrioritize patients/wounds requiring clinical attention and explain exactly why they were flagged.
+
+Item
+Requirement
+Primary roles
+Doctor, Wound Specialist; Clinic Admin if clinical role
+Primary entry points
+Doctor homepage, alerts, dashboard
+Primary outcome
+Open, assign, acknowledge, or resolve prioritized clinical work
+Phase
+MVP
+
+A. Information / UI blocks
+Severity tabs/filters
+Prioritized case list
+Patient/wound context
+Reason(s) flagged
+Time since alert
+Assignee
+Latest image thumbnail
+Review action
+Status counts
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Severity
+Alert/rule engine
+Critical/Urgent/Review etc.
+Reasons
+Rule evaluations/manual alert
+List fired rules and values.
+Alert age
+System
+Time since created.
+Patient/wound
+Clinical records
+Minimal context.
+Assignee/status
+Alert workflow
+Operational state.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Review
+Permitted clinician
+Open patient/wound/assessment context.
+Acknowledge
+Permitted user
+Record ownership/awareness; does not resolve.
+Assign
+Permitted user
+Route to user/role.
+Resolve
+Authorized clinician
+Require resolution and optional reason.
+Filter
+Permitted user
+Severity/type/assignee/status.
+
+D. Permissions
+Resolution rights may differ by role.
+Only clinic-scoped cases.
+E. Business rules / functional logic
+Sort Critical &gt; Urgent &gt; Review by default.
+Group multiple reasons for same wound rather than create noisy duplicate rows where possible.
+SLA/escalation is configurable.
+F. Admin-controlled / configurable values
+Severity definitions.
+Review SLA by severity.
+Escalation chain.
+Alert deduplication/grouping behavior.
+G. Loading, empty, validation, and error states
+No alerts: caught-up state.
+Alert refers to missing/deactivated patient: preserve audit and show safe context.
+H. What happens next / downstream dependencies
+Review -&gt; Patient/Wound/AI Review.
+SLA miss -&gt; escalation/notifications.
+I. Mockup / UX notes
+Primary clinical command center.
+Reasons should be readable in seconds.
+
+S-17 — Alerts &amp; Tasks
+Screen purposeManage clinical/operational alerts and follow-up work without confusing notifications with actual clinical resolution.
+
+Item
+Requirement
+Primary roles
+Doctor, Nurse, Wound Specialist, Clinic Admin
+Primary entry points
+Navigation, dashboard, review queue
+Primary outcome
+Track ownership and completion of alerts/tasks
+Phase
+MVP
+
+A. Information / UI blocks
+Alerts tab
+Tasks tab
+Search/filters
+Severity/status/assignee
+Detail drawer
+Create task action
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Alert status
+Alert
+New/Acknowledged/Assigned/Resolved/Dismissed.
+Task status
+Task
+Open/In progress/Done etc.
+Due date/SLA
+Config/task
+Operational deadline.
+Patient/wound link
+Clinical context
+Navigate.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Acknowledge Alert
+Permitted user
+Mark acknowledged only.
+Assign
+Permitted user
+Change assignee and log.
+Resolve/Dismiss
+Authorized user
+Require reason where configured.
+Create Task
+Permitted user
+Set patient/wound, assignee, due date, priority.
+Complete Task
+Assignee/permitted user
+Mark done; does not necessarily close alert.
+
+D. Permissions
+Alert vs task permissions may differ.
+Task visibility clinic-scoped.
+E. Business rules / functional logic
+Reading notification != acknowledging alert.
+Completing a task != resolving alert unless explicitly linked/configured.
+F. Admin-controlled / configurable values
+Task priorities/statuses.
+Alert lifecycle values.
+SLA and escalation.
+G. Loading, empty, validation, and error states
+No alerts/tasks: clean empty state.
+Past-due task: overdue state.
+H. What happens next / downstream dependencies
+Patient/wound link -&gt; clinical screens.
+Alert resolution updates queue/dashboard counts.
+I. Mockup / UX notes
+Use clear tabs/segmentation.
+Avoid notification-center look for serious clinical work.
+
+S-18 — Reports
+Screen purposeProvide clinically and operationally useful reports with clearly defined metrics and permission-safe exports.
+
+Item
+Requirement
+Primary roles
+Clinic Admin, Doctor, Clinical Lead, Auditor where authorized
+Primary entry points
+Reports navigation
+Primary outcome
+View/filter/export approved metrics
+Phase
+MVP
+
+A. Information / UI blocks
+Report catalog/categories
+Filter panel
+Metric/chart/table output
+Export controls
+Definition/help text
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Date range
+Filter
+Required for time-based reports as appropriate.
+Clinic
+Scope
+Fixed to current clinic unless Super Admin aggregate.
+Wound type/status/clinician
+Filters
+Report dependent.
+Metric definitions
+Metadata
+Explain what is counted.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Run/Refresh
+Permitted user
+Apply filters and recalculate.
+Export
+Authorized user
+Export only visible/authorized data and log sensitive export.
+Drill down
+Permitted user
+Open underlying patient/wound where appropriate.
+
+D. Permissions
+Exports are role and tenant scoped.
+Audit/PHI reports may require elevated permission.
+E. Business rules / functional logic
+Use finalized assessments by default for outcome/trend reports.
+Counts must identify unit: patient, wound, assessment, alert.
+F. Admin-controlled / configurable values
+Available reports.
+Default date ranges.
+Export permission.
+G. Loading, empty, validation, and error states
+No data: explain filters/no matching results.
+Long-running report: loading/progress.
+H. What happens next / downstream dependencies
+Drill-down -&gt; Patient/Wound/Queue.
+I. Mockup / UX notes
+Charts only when they improve comprehension.
+Definitions should be visible.
+
+S-19 — Rule Configuration
+Screen purposeList and govern clinical/operational rules without changing application code.
+
+Item
+Requirement
+Primary roles
+Super Admin, authorized Clinical Admin / Clinical Governance
+Primary entry points
+Configuration navigation
+Primary outcome
+Find, filter, activate/deactivate, and open versioned rules
+Phase
+MVP
+
+A. Information / UI blocks
+Rules table
+Search/filter by domain/severity/scope/status
+Add Rule CTA
+Version/history indicator
+Global vs Clinic scope
+Effective dates
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Rule name
+Rule config
+Human-readable.
+Variable/operator/value/unit
+Rule config
+Core condition.
+Severity/effect
+Rule config
+Review/Urgent/etc.
+Action
+Rule config
+Create alert, risk modifier, retake, etc.
+Scope
+Rule config
+Global/clinic/wound type.
+Version/effective dates
+Rule version
+Traceability.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Add Rule
+Authorized governance user
+Open Rule Editor in draft mode.
+Edit
+Authorized user
+Create new version, not overwrite active history.
+Deactivate
+Authorized user
+Stop future applicability; preserve past evaluations.
+View History
+Authorized user
+Show versions/approvals/effective periods.
+Duplicate
+Authorized user
+Create draft copy.
+
+D. Permissions
+Only designated roles can edit clinical rules.
+Read-only access may be broader.
+E. Business rules / functional logic
+Changing a rule should apply prospectively unless explicit recalculation is approved.
+UI must show source: Global Default vs Clinic Override.
+F. Admin-controlled / configurable values
+Who may edit/approve.
+Clinic override policy.
+Rule domains/severities/actions.
+G. Loading, empty, validation, and error states
+Invalid/expired rule: clearly labeled.
+No rules: onboarding state but system may ship with approved defaults.
+H. What happens next / downstream dependencies
+Edit/Add -&gt; Rule Editor.
+Activated rules -&gt; evaluation engine.
+I. Mockup / UX notes
+Powerful but understandable.
+Do not make admins edit JSON or code.
+
+S-20 — Rule Editor
+Screen purposeCreate or revise one versioned clinical/operational rule using human-readable conditions and actions.
+
+Item
+Requirement
+Primary roles
+Authorized Clinical Admin / Governance
+Primary entry points
+Rule Configuration &gt; Add/Edit
+Primary outcome
+Validated draft rule saved/approved/activated according to governance
+Phase
+MVP
+
+A. Information / UI blocks
+Rule identity
+IF condition builder
+THEN severity/action
+Scope
+Effective dates
+Approval status
+Readable preview
+Test with sample data later
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Variable
+Configured catalog
+e.g. wound.area_change_pct.
+Operator
+Allowed by type
+&gt;, &gt;=, equals, contains, between.
+Threshold/value
+Typed input
+Number/category/boolean.
+Unit
+Metadata
+%, days, hours, etc.
+Severity/effect
+Configurable list
+Review/Urgent/Critical/Risk Modifier.
+Action
+Configurable list
+Create alert/task/escalate/request retake.
+Scope
+Governance
+Global/clinic/wound type.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Save Draft
+Authorized user
+Save inactive version.
+Submit for Approval
+Authorized user
+Route to governance if approval required.
+Activate
+Approver
+Make version effective according to date.
+Cancel
+User
+Return without unsaved changes.
+
+D. Permissions
+Editor access restricted to approved roles.
+Activation may require separate approver.
+E. Business rules / functional logic
+Variable/operator/unit combinations must validate.
+Version is immutable after activation; edits create a new version.
+Rule preview must be human-readable.
+F. Admin-controlled / configurable values
+Variable catalog.
+Operators by data type.
+Severities/actions.
+Approval workflow.
+Effective date policy.
+G. Loading, empty, validation, and error states
+Invalid operator/value: block save/activation with explanation.
+Overlapping active version dates: block or warn according to design.
+H. What happens next / downstream dependencies
+Activated rule becomes eligible for future evaluations.
+I. Mockup / UX notes
+Show a sentence preview: “If wound area change is greater than X%, create an Urgent alert.”
+Clearly mark mock/TBD values in design demos.
+
+S-21 — Reference Data Configuration
+Screen purposeManage dropdowns and controlled clinical lists without code changes while preserving historical meaning.
+
+Item
+Requirement
+Primary roles
+Super Admin, authorized Clinic Admin/Clinical Admin
+Primary entry points
+Configuration navigation
+Primary outcome
+Reference values added, edited, ordered, or deactivated safely
+Phase
+MVP
+
+A. Information / UI blocks
+Category navigation
+Reference-value table
+Add/Edit drawer
+Ordering
+Active/inactive state
+Global/clinic source
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Code
+Stable internal value
+Should not depend on display language.
+Display label
+English/Arabic later
+Editable with version/history as needed.
+Order
+Number
+Controls UI order.
+Active
+Boolean
+Deactivate rather than delete when historically used.
+Scope
+Global/clinic override
+Governance dependent.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Add Value
+Authorized admin
+Create new reference item.
+Edit Label/Order
+Authorized admin
+Update presentation and log.
+Deactivate
+Authorized admin
+Hide from new entry while preserving historical records.
+Reactivate
+Authorized admin
+Make available again.
+
+D. Permissions
+Clinical reference lists may require clinical governance; ordinary admins should not alter sensitive classifications without permission.
+E. Business rules / functional logic
+Never hard-delete a historically used value by default.
+Underlying stored code should remain stable if label changes.
+F. Admin-controlled / configurable values
+Which lists are global vs clinic-specific.
+Who can edit each list.
+English/Arabic labels.
+G. Loading, empty, validation, and error states
+Duplicate code/label: validation.
+No values: show add state but warn if required by forms.
+H. What happens next / downstream dependencies
+Updated active lists feed patient/wound/assessment forms.
+I. Mockup / UX notes
+Simple data-admin UX.
+Show where value is used if possible later.
+
+S-22 — Audit Log
+Screen purposeGive authorized users a traceable history of sensitive access, clinical changes, AI decisions, alerts, users, and configuration changes.
+
+Item
+Requirement
+Primary roles
+Super Admin, Clinic Admin/Auditor by permission
+Primary entry points
+Audit navigation, entity history links
+Primary outcome
+Find and inspect immutable activity events
+Phase
+MVP
+
+A. Information / UI blocks
+Audit table
+Search/filter
+Date range
+User/role/action/entity filters
+Detail drawer
+Export if authorized
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Timestamp
+System
+Immutable event time.
+Actor
+User/system
+Who/what performed action.
+Organization
+System
+Scope.
+Action
+Event type
+View/edit/finalize/approve/export/config change etc.
+Entity
+Patient/wound/assessment/rule/user
+Context.
+Before/after metadata
+Audit data
+Where appropriate; minimize PHI.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Filter/Search
+Authorized auditor
+Query within permitted scope.
+Open Details
+Authorized auditor
+Show event metadata.
+Export
+Restricted role
+Export scoped audit results and log the export.
+
+D. Permissions
+Audit visibility is restricted.
+Ordinary users cannot edit audit events.
+E. Business rules / functional logic
+Do not store unnecessary PHI in free-text audit metadata.
+Configuration and finalized-record changes should be traceable.
+F. Admin-controlled / configurable values
+Retention policy.
+Which actions are logged.
+Who can export audit data.
+G. Loading, empty, validation, and error states
+No matches: empty state.
+Large range: pagination/loading.
+H. What happens next / downstream dependencies
+Entity links may open the related record if user is still authorized.
+I. Mockup / UX notes
+Enterprise, structured, filterable.
+Avoid showing raw internal JSON by default.
+
+S-23 — Patient Home Check-in (Future)
+Screen purposeAllow a patient/caregiver to submit a remote wound photo and simple symptom information for clinic review.
+
+Item
+Requirement
+Primary roles
+Patient / Caregiver
+Primary entry points
+Secure reminder link, patient portal/app later
+Primary outcome
+Remote submission enters clinic review workflow
+Phase
+Future
+
+A. Information / UI blocks
+Step-by-step instructions
+Identity/consent context
+Camera/photo upload
+Optional marker guidance
+Simple symptom questions
+Review/Submit
+Submission confirmation
+B. Data / fields displayed or captured
+Data / Field
+Source / Type
+Behavior
+Photo
+Patient capture
+Quality checked.
+Marker status
+Optional/future
+If calibrated home workflow.
+Pain/change questions
+Configurable questionnaire
+Clinically approved.
+Other concern
+Text/choice
+Minimal patient input.
+
+C. User actions and button behavior
+Action
+Who
+Functional behavior
+Take/Upload Photo
+Patient
+Capture image.
+Retake
+Patient
+Replace unsubmitted image.
+Submit
+Patient
+Create remote submission and review item.
+
+D. Permissions
+Patient can access only their own authorized check-in.
+Clinician-only data is not exposed.
+E. Business rules / functional logic
+Without validated calibration, precise measurements should not be presented as equivalent to clinical capture.
+AI must not independently diagnose/prescribe to patient.
+Configured concerning responses may increase review priority.
+F. Admin-controlled / configurable values
+Home questionnaire.
+Marker requirement.
+Reminder schedule.
+Escalation rules.
+G. Loading, empty, validation, and error states
+Poor image: retake guidance.
+Expired link: re-auth/reissue flow.
+Submission failure: preserve input and retry.
+H. What happens next / downstream dependencies
+Submission -&gt; clinic Review Queue / task.
+Clinician decides contact/escalation.
+I. Mockup / UX notes
+Much simpler than clinician UI.
+Large controls, plain language, bilingual/RTL-ready.
+
+Shared Functional Rules Across All Screens
+Tenant isolationEvery patient, wound, assessment, image, alert, task, report, and configuration override must be resolved within the authorized organization context. Hiding a button is not sufficient authorization.
+
+Shared admin-configurable concepts
+Clinical thresholds: age, wound area change, tissue %, pain change, lab thresholds where approved.
+Time windows: healing comparison period, overdue assessment interval, alert SLA, escalation timing.
+Risk-factor weights and risk bands if a weighted model is used.
+Reference lists: wound types, body locations, wound status, exudate, periwound findings, exposed structures, closure reasons.
+AI settings: minimum confidence behavior, which outputs require calibration, which roles may approve.
+Governance: global vs clinic override, approver role, effective dates, versioning.
+Shared record-source principle
+Keep original wound image separate from normalized/processed image.
+Keep original AI output separate from clinician-approved final output.
+Keep original finalized assessment version traceable after amendment.
+Keep the rule version and input values that caused an alert.

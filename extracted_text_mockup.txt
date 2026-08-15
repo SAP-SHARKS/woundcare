@@ -1,0 +1,603 @@
+WOUND CARE AI PLATFORM
+UI/UX Mockup Requirements
+Software screens only • Design exploration specification
+
+Purpose of this documentUse this specification in different AI design tools to generate consistent high-fidelity software mockups. The goal is to finalize the visual system, information architecture, navigation, screen layouts, and clinician workflows before development. It intentionally excludes backend implementation, database setup, AI model development, production security configuration, and deployment.
+
+Version 1.0  •  August 2026
+
+1. Scope and Design Goal
+Design the complete user interface for a modern AI-assisted wound-care management platform used by clinics, doctors, wound specialists, nurses, and administrators. At this stage, create high-fidelity UI/UX mockups only.
+Do not build the backend in this phaseDo not focus on Supabase setup, production authentication logic, database migrations, APIs, model training, medical algorithm implementation, deployment, or infrastructure. The purpose of these mockups is to decide what the software should look like and how users should move through it.
+
+Visual design and design system
+Navigation and information architecture
+Page layouts and content hierarchy
+Clinical workflows
+Desktop, tablet, and mobile behavior
+Status treatments, alerts, tables, forms, cards, image framing, and AI review patterns
+2. Product Overview
+The platform helps healthcare organizations manage wound-care patients and track wounds longitudinally. The product must support multiple clinics while keeping each clinic’s clinical workspace conceptually separate.
+Platform Super Admin
+Manages clinics and top-level platform administration.
+Clinic Admin
+Manages one clinic, its staff, and operational settings.
+Doctor / Wound Specialist
+Reviews patients, wound progression, AI findings, urgent cases, and clinical assessments.
+Nurse
+Finds patients, captures wound photos, records assessments, and completes day-to-day clinical documentation.
+
+Core clinical structure:
+One patient may have multiple wounds.
+Each wound has its own wound episode/profile.
+Each wound may have multiple assessments over time.
+Each assessment may contain wound photos, measurements, wound-bed information, exudate, periwound condition, pain, notes, and AI-assisted observations.
+3. UI Design Principles
+Premium modern healthcare SaaS, not an old hospital EMR.
+Clean, calm, trustworthy, precise, and easy to scan.
+Data-rich without feeling cluttered.
+Strong hierarchy and generous whitespace.
+Clinical information should be visually prioritized by importance, not displayed as equally weighted boxes.
+Use color intentionally for status and interaction, not decoration.
+Avoid generic Bootstrap dashboards, consumer wellness aesthetics, neon AI styling, cartoon medical art, giant gradients, excessive glassmorphism, and unnecessary charts.
+Do not put every element in a separate rounded card. Use spacing, typography, sections, and dividers to create structure.
+4. Design References and Color Experiments
+The designer/AI will receive screenshots from other products as style references. These references are used to test different visual systems while keeping the wound-care product structure consistent.
+Reference-image instructionUse attached screenshots for color palette, overall mood, typography personality, spacing, surface treatment, sidebar treatment, button design, card treatment, and component polish. Do not copy logos, branding, content, or exact layouts. Translate the aesthetic direction into the wound-care product while preserving the information architecture in this document.
+
+Keep the same screen content when testing different palettes.
+Do not redesign the underlying product structure just to match a reference.
+Use a calm neutral frame around wound photographs because clinical images already contain reds, yellows, browns, blacks, pinks, and many skin tones.
+Do not introduce unrelated accent colors unless needed for meaningful clinical status communication.
+5. Clinical Status System
+Improving
+Positive status. Usually restrained green or another positive treatment.
+Stable
+Neutral state. Typically neutral blue/grey.
+Needs Review
+Attention required; typically amber.
+Worsening
+Concerning trend; stronger warning treatment.
+Urgent / Critical
+High-priority state. Use red sparingly and locally rather than filling entire cards.
+
+Status should never rely on color alone. Combine color with a label, icon, border, or concise explanation.
+6. Global Application Shell
+Primary navigation
+Overview, Patients, Wounds, Review Queue, Tasks, Reports
+Administration area
+Team, Configuration, Audit Log (role-dependent)
+Bottom account area
+Clinic identity, user profile/avatar, settings/logout
+Header
+Clear page title, optional subtitle/context, primary CTA, secondary actions, search/filter where relevant
+
+Use a modern collapsible left sidebar for desktop. Not every role sees every navigation item.
+7. Screen Requirements
+01. Magic Link Login
+Primary user
+All staff users
+Purpose
+Secure, minimal entry into the clinical workspace.
+
+Required content
+Product logo/name
+Short welcome headline and supporting text
+Email field
+Send secure login link button
+Security/support note
+Optional language selector
+Simple footer
+UX direction
+Extremely minimal and calm
+Should feel like secure enterprise healthcare software, not a consumer app
+02. Super Admin Dashboard
+Primary user
+Super Admin
+Purpose
+View and manage the overall platform without making individual clinical records the visual focus.
+
+Required content
+Summary metrics: total clinics, active clinics, total users, total patients, platform activity
+Clinic table/list with clinic, city/region, clinic admin, user count, patient count, status, last activity
+Search and filters
+Create Clinic CTA
+Recent platform activity
+UX direction
+Operational SaaS dashboard
+No detailed wound photos or patient chart browsing on the default view
+03. Clinic Management
+Primary user
+Super Admin
+Purpose
+Create, open, edit, deactivate, and assign administrators to clinics.
+
+Required content
+Clinic name
+Organization type
+City/region
+Primary clinic administrator
+Staff count
+Patient count
+Status
+Last activity
+Actions menu
+Optional detail drawer
+UX direction
+Clean enterprise table/list
+Support quick scanning and management
+04. Clinic Admin Dashboard
+Primary user
+Clinic Admin
+Purpose
+Operational overview of one clinic and the work requiring attention.
+
+Required content
+Top metrics: active patients, active wounds, need review, high risk, overdue assessments
+Patients needing attention
+Overdue assessments
+Recent clinic activity
+Staff overview
+Pending reviews
+UX direction
+Actionable rather than chart-heavy
+Urgent work should be prominent but not visually alarming
+05. Team Management
+Primary user
+Clinic Admin
+Purpose
+Manage clinic staff and their roles.
+
+Required content
+Staff table/list
+Name and avatar/initials
+Email
+Role
+Status
+Last login
+Optional workload/assigned-patient count
+Invite Staff CTA
+Search, role filter, status filter
+Row actions
+UX direction
+Premium B2B SaaS team-management feel
+Roles may include Clinic Admin, Doctor, Wound Specialist, Nurse, Read-only
+06. Patient Directory
+Primary user
+Doctor, Nurse, Clinic Admin
+Purpose
+Find patients quickly and understand which cases need attention.
+
+Required content
+Prominent search
+Filters for status, risk, wound type, clinician, overdue status, active wounds
+Patient name
+MRN
+Age
+Active wound count
+Last assessment
+Clinical status
+Risk
+Assigned clinician
+Add Patient CTA
+UX direction
+Fast to scan
+High-risk/urgent rows should stand out without dominating the page
+Support sorting and pagination or a well-designed long list
+07. Create / Edit Patient
+Primary user
+Doctor, Nurse, Clinic Admin
+Purpose
+Enter patient demographics and clinically relevant information without presenting one overwhelming form.
+
+Required content
+Patient identity: MRN, first name, last name, date of birth, sex, preferred language
+Contact information: phone, email, address, city/region
+Clinical/risk factors: diabetes, HbA1c, PAD, neuropathy, CKD, dialysis, smoking, prior ulcers, prior amputation, mobility
+Save and cancel actions
+UX direction
+Group data using sections, tabs, accordions, or progressive forms
+Do not show dozens of fields at equal visual weight
+Mobile-friendly input design
+08. Patient Overview / Patient Chart
+Primary user
+Doctor, Nurse
+Purpose
+Give the clinician an at-a-glance understanding of the patient, active wounds, risk factors, and recent activity.
+
+Required content
+Patient header: name, MRN, age, sex
+Clinical indicators such as Type II Diabetes, PAD, previous amputation, HbA1c
+Tabs: Overview, Wounds, Assessments, Clinical, Files
+Summary: active wounds, clinical risk, last assessment, next review
+Active wound cards/rows with thumbnail, location, type, latest size, trend, status, last assessment, View Wound
+Alerts / flags
+Risk factors
+Recent activity feed
+UX direction
+One of the core product screens
+Clinically dense but visually calm
+Avoid traditional EMR box overload
+09. Patient Wound List
+Primary user
+Doctor, Nurse
+Purpose
+Show all wounds belonging to one patient.
+
+Required content
+Wound thumbnail
+Anatomical location
+Wound type
+Date first observed/opened
+Latest surface area
+Current status
+Latest assessment date
+Trend
+Add Wound CTA
+UX direction
+Make multiple wound episodes easy to distinguish
+Cards or sophisticated rows are both acceptable
+10. Create / Edit Wound
+Primary user
+Doctor, Nurse
+Purpose
+Create or maintain a distinct wound episode.
+
+Required content
+Anatomical location
+Side/laterality
+Wound type
+Date first observed
+Status
+Classification/stage where applicable
+Notes
+Save / cancel
+UX direction
+Keep the workflow simple and structured
+Do not expose unnecessary fields before they are relevant
+11. Wound Profile / Healing Timeline
+Primary user
+Doctor, Nurse
+Purpose
+Visually communicate longitudinal wound progression and make improvement or deterioration understandable within seconds.
+
+Required content
+Header: wound location, type, active-since date, current status
+Actions: New Assessment, Compare, more menu
+Latest wound image displayed prominently
+Current surface area and change from previous
+Length, width, depth
+Wound-bed percentages where available
+Longitudinal assessment timeline with date, wound image, measurement, and trend
+Small wound-area trend chart
+AI-assisted change summary
+Optional compare affordance
+UX direction
+Signature product screen
+Images are primary clinical evidence; charts support them
+Photos must be large enough for meaningful comparison
+Do not make the timeline resemble an ecommerce gallery
+Mockup noteFor color testing, this is one of the most important screens because the UI palette must coexist with real wound photography without competing with it.
+
+12. New Wound Assessment
+Primary user
+Nurse, Doctor
+Purpose
+Capture a complete wound assessment efficiently on desktop, tablet, or mobile.
+
+Required content
+Photo section
+Measurements: length, width, depth, calculated area, undermining, tunneling
+Wound bed: granulation, slough, necrotic/eschar, epithelial
+Exudate: amount and type
+Wound edges
+Periwound condition
+Symptoms: pain, odor, clinician concern
+Notes
+Submit Assessment
+Save Draft
+UX direction
+Use a progressive workflow instead of one giant form
+Possible step structure: Photo → Measurements → Wound Bed → Periwound → Symptoms → Review
+Nurse workflow should be fast and calm on a phone/tablet
+13. Wound Camera
+Primary user
+Nurse
+Purpose
+Guide standardized wound photography and prepare the UX for future calibration and image-quality checks.
+
+Required content
+Large live/simulated camera preview
+Wound framing guidance
+Marker detected status
+Lighting indicator
+Focus indicator
+Distance guidance
+Angle guidance
+Wound visible indicator
+Large capture button
+Retake and Use Photo actions
+UX direction
+Should feel like a smart clinical camera tool, not a normal file uploader
+Make guidance highly legible on mobile
+Use concise correction instructions such as “Move closer” or “Calibration marker not detected”
+14. AI Analysis Review
+Primary user
+Doctor, Nurse
+Purpose
+Present machine-generated observations as evidence that requires clinician review, not as autonomous diagnosis.
+
+Required content
+Header: AI-Assisted Assessment, Awaiting Clinician Review
+Supporting copy explaining automated observations are not yet approved
+Original wound image with optional segmentation overlay
+Original / AI Overlay toggle
+Image quality and calibration status
+Measurements with distinction between AI measured, calculated, and clinician entered
+Change from previous assessment
+Wound-bed/tissue observations
+Periwound/visual observations
+AI-generated clinical note
+Explainability / “Why was this flagged?” section
+Approve Assessment, Edit Findings, Reject AI Analysis, Flag for Specialist Review
+UX direction
+Visual logic should be Evidence → AI Observation → Clinician Decision
+Do not present AI as a chatbot
+Avoid neon purple, sparkles, robots, glowing borders, or meaningless AI scores
+Confidence can be shown as subordinate metadata when clinically useful
+Mockup noteThis screen is essential for testing whether a palette makes AI feel credible, calm, and clinical rather than gimmicky.
+
+15. Assessment Comparison
+Primary user
+Doctor, Nurse
+Purpose
+Compare two wound visits side by side.
+
+Required content
+Two selected dates
+Large side-by-side wound images
+Surface-area comparison
+Percentage change
+Tissue change
+Trend/status change
+Optional future previous-boundary overlay
+Optional synchronized zoom/slider concept
+UX direction
+Visual comparison is the priority
+Keep tables/metrics subordinate to the images
+16. Wound Care Command Center / Urgent Review
+Primary user
+Doctor, Wound Specialist
+Purpose
+Answer the question: “Who needs attention today?”
+
+Required content
+Summary metrics: active patients, active wounds, need review, high risk
+Primary queue tabs: All, Critical, Worsening, Overdue
+Prioritized patient cards/rows with patient, wound, severity, reason, time since flag, assigned reviewer, wound thumbnail, Review action
+Compact patient-status distribution
+Overdue assessment list
+UX direction
+Action queue, not an analytics dashboard
+First visual focus should be actionable patients
+Use color sparingly for severity
+A clinician should understand the priority hierarchy within a few seconds
+Mockup noteThis is the best screen for quickly testing a new palette because it exposes sidebar, surfaces, tables/lists, status colors, buttons, alerts, and hierarchy.
+
+17. Alerts &amp; Tasks
+Primary user
+Doctor, Nurse
+Purpose
+Manage clinical alerts and follow-up tasks.
+
+Required content
+Tabs: Alerts and Tasks
+Alert severity
+Patient and wound reference
+Reason
+Date/time
+Assigned person
+Status
+Actions
+Task, assigned to, due date, priority, status
+Filters and search
+UX direction
+Alert lifecycle may show New, Acknowledged, Assigned, Resolved
+Keep clinical alerts structured and easy to triage
+18. Reports
+Primary user
+Clinic Admin, Doctor
+Purpose
+Provide clinical, operational, and governance reporting.
+
+Required content
+Clinical: wound healing trends, high-risk patients, outcomes, wounds by type
+Operational: active wound census, overdue assessments, assessment compliance, workload
+Governance: AI vs clinician agreement, rule-trigger analysis, audit reports
+Date filters, clinic filters, wound type, provider, export controls
+UX direction
+Use charts only when they improve understanding
+Support export without making the screen feel like a BI tool
+19. Rule Configuration
+Primary user
+Super Admin / Authorized Clinical Admin
+Purpose
+Allow thresholds and clinical/operational logic to be configured rather than hardcoded.
+
+Required content
+Rules table with rule name, variable, operator, threshold, unit, severity, action, scope, status, version
+Examples such as wound area change, patient age, assessment overdue, necrotic tissue, previous amputation
+Add Rule, Edit, Duplicate, Deactivate, View History
+UX direction
+Powerful but understandable admin tool
+Make current value, scope, and version obvious
+Example threshold values in mockups are illustrative only, not validated medical guidance
+20. Rule Editor
+Primary user
+Super Admin / Authorized Clinical Admin
+Purpose
+Create/edit one rule using a readable rule-builder pattern.
+
+Required content
+IF section: variable, operator, value, unit
+THEN section: severity/effect and action
+Scope: Global / Clinic
+Effective date
+Enabled status
+Readable natural-language rule preview
+UX direction
+Example layout: IF [Wound area change] [greater than] [value] [%] THEN [Urgent] [Create clinical alert]
+Show a clear preview sentence
+Keep advanced options secondary
+21. Reference Data Configuration
+Primary user
+Super Admin / Clinic Admin
+Purpose
+Manage configurable lists and dropdown values used throughout the product.
+
+Required content
+Categories such as wound types, anatomical locations, wound statuses, wound-bed characteristics, exudate types, periwound findings, exposed structures, alert severity
+Editable table/list
+Active/inactive state
+Add, edit, reorder, deactivate
+UX direction
+Use tabs or category sidebar
+Prefer deactivate over delete
+Enterprise admin clarity
+22. Audit Log
+Primary user
+Authorized Admin / Auditor
+Purpose
+Trace sensitive activity and record changes.
+
+Required content
+Date/time
+User
+Role
+Action
+Patient/entity reference
+Clinic
+Filters for date, user, action, clinic, patient
+Export
+Detail drawer for one event
+UX direction
+Structured enterprise table
+Secure and restrained visual style
+Avoid exposing unnecessary clinical content in the list itself
+23. Patient Home Check-in
+Primary user
+Patient / Caregiver (future)
+Purpose
+Provide a much simpler remote wound-photo and symptom check-in experience.
+
+Required content
+Step-by-step guidance: prepare wound, position marker if required, take photo, answer a few questions, submit
+Take/upload photo
+Optional marker guidance
+Simple symptom questions
+Progress state
+Submit button
+Support/reassurance text
+UX direction
+Simpler and softer than clinician screens
+Large controls and plain language
+Do not design as a miniature doctor dashboard
+8. Global Component and Interaction Requirements
+8.1 Empty States
+Use useful empty-state copy with a clear next action.
+Example: “No active wounds. Create the patient’s first wound to begin tracking healing progress.”
+Avoid large cartoon illustrations unless extremely subtle.
+8.2 Loading States
+Prefer skeleton rows, image placeholders, and subtle progress indicators.
+Avoid generic spinning loaders across the whole application.
+8.3 Modals and Drawers
+Use side drawers for contextual viewing/editing when the user should remain in context.
+Use full pages for clinically important workflows such as wound assessment and AI review.
+8.4 Tables
+Clear headers, restrained borders, generous row height, subtle hover states, contextual actions, and filters above the table.
+Avoid excessive gridlines.
+8.5 Cards
+Use cards selectively for meaningful conceptual groups.
+Do not wrap every piece of data in its own card.
+Prefer whitespace, sections, typography, and dividers when possible.
+8.6 Typography
+Use a highly legible modern sans-serif such as Inter, Geist, SF Pro, or a comparable system.
+Create clear hierarchy between page titles, section titles, primary clinical values, labels, supporting text, and metadata.
+Clinical measurements should be immediately scannable, e.g., a large “4.1 cm²” with a smaller “Surface area” label.
+9. Wound Photography and AI Visual Language
+9.1 Wound Photography
+Wound images are clinical evidence and should be framed neutrally.
+The UI palette must not compete with reds, yellows, browns, blacks, pinks, and diverse skin tones in wound photographs.
+Use calm neutral image backgrounds/borders and consistent image aspect treatment.
+9.2 AI Visual Language
+AI should feel integrated into clinical workflow, not like a separate chatbot.
+Prefer labels such as AI-assisted analysis, Automated observation, AI measurement, Awaiting clinician review.
+Do not use robots, holograms, glowing purple, sparkles, or futuristic AI styling.
+Show explainability: which observation or rule caused a review flag.
+Do not display arbitrary scores unless they have genuine clinical meaning.
+10. Responsive Requirements
+Desktop
+Primary clinician/admin workspace optimized around 1440 px, with graceful behavior around 1024 px.
+Tablet
+Important for nurses and clinical review; maintain clear touch targets and simplified layouts.
+Mobile
+Patient search, patient overview, assessment, camera capture, AI review, alerts/tasks should have purpose-built mobile layouts, not merely a scaled desktop UI.
+RTL readiness
+Initial mockups may be English, but layouts should be capable of later Arabic/right-to-left support. Avoid designs that depend completely on left-to-right positioning.
+
+Use larger tap targets on mobile.
+Use sticky primary actions where appropriate.
+Collapse tables into meaningful stacked rows/cards rather than forcing horizontal scrolling for core workflows.
+Reduce secondary information while preserving clinical priority.
+11. Consistent Mockup Data
+Use the same sample patients across screens so the mockups feel like one connected product rather than disconnected concepts.
+11.1 Primary Sample Patient
+Patient
+Mohammed Al-Hassan
+MRN
+728382
+Age / Sex
+72 / Male
+Risk factors
+Type II diabetes; HbA1c 9.1%; peripheral arterial disease; neuropathy; previous toe amputation
+Primary wound
+Left Plantar Forefoot - Diabetic Foot Ulcer
+Status
+Improving
+Latest surface area
+4.1 cm²
+Previous surface area
+5.3 cm²
+Change
+Down 23%
+Dimensions
+Length 2.6 cm; Width 1.9 cm; Depth 0.4 cm
+Wound bed
+Granulation 64%; Slough 28%; Necrotic 8%
+
+11.2 Additional Patients
+Fatimah Al-Harbi
+65; Left Lower Leg Venous Ulcer; Worsening; 8.4 cm²; up 18%; increased drainage.
+Ahmed Al-Qahtani
+79; Right Heel Pressure Injury; Needs Review; assessment overdue 3 days; limited mobility.
+Sarah Al-Salem
+58; Surgical wound; Stable; latest assessment yesterday.
+
+12. Initial Color / Style Test
+Before designing all screens in every color direction, use a small representative set to compare palettes apples-to-apples.
+Generate the Wound Care Command Center. It exposes sidebar, navigation, KPI treatment, lists, alerts, buttons, severity colors, and hierarchy.
+Generate the Patient Overview. It tests dense clinical information, tabs, risk badges, patient identity, and wound cards.
+Generate the Wound Profile / Healing Timeline. It tests whether the palette coexists with wound photography and longitudinal data.
+Generate the AI Analysis Review. It tests image framing, measurements, AI findings, clinical review actions, and whether AI feels credible rather than gimmicky.
+Comparison ruleWhen switching to a new color/style reference, keep the information architecture and sample content the same. Change only the visual system. This makes it possible to judge the palette itself instead of accidentally preferring a different layout.
+
+13. Mockup Deliverables
+Create high-fidelity mockups, not low-fidelity wireframes.
+Create actual software product screens only. Do not create landing pages, marketing sections, pricing pages, or website hero sections.
+Use realistic clinical sample content instead of lorem ipsum.
+Maintain the same design system across all screens.
+Maintain consistent sidebar, typography, buttons, inputs, tables, cards, badges, alerts, iconography, image framing, status treatments, spacing, and borders.
+Show important empty, loading, warning, and review states where relevant.
+Where practical, provide desktop and mobile versions of nurse-critical workflows.
+14. Master Instruction to the Design AI
+Copy this instruction together with the requirements aboveDesign this wound-care application as one coherent software platform created by one excellent product design team. Do not independently reinvent the visual language on each screen. Use any attached screenshots as inspiration for color, mood, typography, spacing, surface treatment, navigation style, cards, and component polish, but preserve the wound-care information architecture in this document. Create original software mockups only, not landing pages. The priority is exceptional clinical usability, clear hierarchy, calm visual design, and a premium modern SaaS experience.

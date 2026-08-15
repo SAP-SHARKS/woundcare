@@ -4,7 +4,7 @@ import { signOut } from '../hooks/useAuth';
 import {
   LayoutDashboard, Users, Building2, UserCog,
   Activity, Bell, ClipboardList, LogOut, Menu, X,
-  Search, Shield, ChevronRight
+  Search, Shield, ChevronRight, FileText, Sliders, Layers, Heart, FolderOpen
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import SuperAdminDashboard from './SuperAdminDashboard';
@@ -16,6 +16,13 @@ import StaffManager from './StaffManager';
 import AlertsView from './AlertsView';
 import TasksView from './TasksView';
 import AuditLogView from './AuditLogView';
+import CommandCenter from './CommandCenter';
+import ReportsView from './ReportsView';
+import RuleManager from './RuleManager';
+import ReferenceDataConfig from './ReferenceDataConfig';
+import PatientHomeCheckIn from './PatientHomeCheckIn';
+import AIAnalysisReview from './AIAnalysisReview';
+import DocumentLibrary from './DocumentLibrary';
 
 type Screen =
   | { name: 'dashboard' }
@@ -26,7 +33,14 @@ type Screen =
   | { name: 'alerts' }
   | { name: 'tasks' }
   | { name: 'audit_logs' }
-  | { name: 'settings' };
+  | { name: 'settings' }
+  | { name: 'documents' }
+  | { name: 'command_center' }
+  | { name: 'reports' }
+  | { name: 'rules' }
+  | { name: 'reference_data' }
+  | { name: 'home_checkin' }
+  | { name: 'ai_review'; assessmentId: string; patientId: string };
 
 interface PatientResult {
   id: string;
@@ -385,16 +399,27 @@ function getNavItems(role: string) {
 
   items.push({ icon: LayoutDashboard, label: 'Dashboard', screen: { name: 'dashboard' } });
 
+  if (['super_admin', 'clinic_admin', 'doctor', 'wound_specialist', 'nurse', 'clinician'].includes(role)) {
+    items.push({ icon: Activity, label: 'Triage Command Center', screen: { name: 'command_center' } });
+  }
+
   if (role === 'super_admin') {
     items.push({ icon: Building2, label: 'Organizations', screen: { name: 'organizations' } });
   }
 
   if (['super_admin', 'clinic_admin', 'doctor', 'wound_specialist', 'nurse', 'clinician'].includes(role)) {
     items.push({ icon: Users, label: 'Patients', screen: { name: 'patients' } });
+    items.push({ icon: FolderOpen, label: 'Document Library', screen: { name: 'documents' } });
+  }
+
+  if (['super_admin', 'clinic_admin', 'doctor', 'wound_specialist', 'clinician'].includes(role)) {
+    items.push({ icon: FileText, label: 'Outcome Reports', screen: { name: 'reports' } });
   }
 
   if (['super_admin', 'clinic_admin'].includes(role)) {
     items.push({ icon: UserCog, label: 'Staff', screen: { name: 'staff' } });
+    items.push({ icon: Sliders, label: 'Triage Rules', screen: { name: 'rules' } });
+    items.push({ icon: Layers, label: 'Reference Data', screen: { name: 'reference_data' } });
   }
 
   if (['super_admin', 'clinic_admin', 'doctor', 'wound_specialist', 'clinician'].includes(role)) {
@@ -405,6 +430,8 @@ function getNavItems(role: string) {
   if (['super_admin', 'clinic_admin'].includes(role)) {
     items.push({ icon: Shield, label: 'Audit Log', screen: { name: 'audit_logs' } });
   }
+
+  items.push({ icon: Heart, label: 'Remote Home Check-in', screen: { name: 'home_checkin' } });
 
   return items;
 }
@@ -420,6 +447,13 @@ function getScreenTitle(screen: Screen): string {
     case 'tasks': return 'Tasks';
     case 'audit_logs': return 'Audit Log';
     case 'settings': return 'Settings';
+    case 'command_center': return 'Triage Command Center';
+    case 'reports': return 'Outcome Reports';
+    case 'rules': return 'Triage Rules Config';
+    case 'reference_data': return 'Reference Data Config';
+    case 'home_checkin': return 'Remote Home Check-in';
+    case 'documents': return 'Document Library';
+    case 'ai_review': return 'AI Analysis Review';
     default: return '';
   }
 }
@@ -451,7 +485,175 @@ function renderScreen(
       return <TasksView organizationId={orgId} />;
     case 'audit_logs':
       return <AuditLogView organizationId={orgId} />;
+    case 'command_center':
+      return (
+        <CommandCenter
+          organizationId={orgId}
+          onSelectPatient={(id) => navigate({ name: 'patient_detail', patientId: id })}
+          onNavigateToReview={(assessmentId, patientId) =>
+            navigate({ name: 'ai_review', assessmentId, patientId })
+          }
+        />
+      );
+    case 'reports':
+      return <ReportsView organizationId={orgId} />;
+    case 'rules':
+      return <RuleManager />;
+    case 'reference_data':
+      return <ReferenceDataConfig />;
+    case 'home_checkin':
+      return <PatientHomeCheckIn />;
+    case 'documents':
+      return <DocumentLibrary organizationId={orgId} />;
+    case 'ai_review':
+      return (
+        <AIReviewLoader
+          patientId={screen.patientId}
+          assessmentId={screen.assessmentId}
+          onClose={() => navigate({ name: 'command_center' })}
+        />
+      );
     default:
       return <div className="text-slate-500">Coming soon...</div>;
   }
+}
+
+function AIReviewLoader({
+  patientId,
+  assessmentId,
+  onClose
+}: {
+  patientId: string;
+  assessmentId: string;
+  onClose: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [patient, setPatient] = useState<any>(null);
+  const [assessment, setAssessment] = useState<any>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch patient
+        const { data: pData, error: pErr } = await supabase
+          .from('patients')
+          .select('*')
+          .eq('id', patientId)
+          .single();
+        if (pErr) throw pErr;
+
+        // Fetch assessment
+        const { data: aData, error: aErr } = await supabase
+          .from('wound_assessments')
+          .select('*')
+          .eq('id', assessmentId)
+          .single();
+        if (aErr) throw aErr;
+
+        setPatient(pData);
+        setAssessment(aData);
+      } catch (err: any) {
+        // Fallback for mocked/sample data items in CommandCenter
+        if (patientId.startsWith('sample-') || patientId.startsWith('mock-')) {
+          setPatient({
+            id: patientId,
+            full_name: patientId === 'sample-p1' ? 'Mohammed Al-Hassan' : 'Fatimah Al-Harbi',
+            mrn: patientId === 'sample-p1' ? '728382' : '529381'
+          });
+          setAssessment({
+            id: assessmentId,
+            assessment_date: new Date().toISOString(),
+            length_cm: 2.6,
+            width_cm: 1.9,
+            depth_cm: 0.4,
+            area_cm2: 5.0,
+            granulation_pct: 64,
+            slough_pct: 28,
+            eschar_pct: 8,
+            epithelial_pct: 0,
+            pain_score: 3,
+            status: 'draft'
+          });
+        } else {
+          setError(err.message || 'Failed to load details');
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [patientId, assessmentId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-slate-100 bg-slate-900 fixed inset-0 z-50">
+        <div className="w-8 h-8 border-3 border-teal-500/30 border-t-teal-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !patient || !assessment) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-100 bg-slate-900 fixed inset-0 z-50 space-y-4">
+        <p className="text-sm font-semibold text-slate-400">{error || 'Data could not be found'}</p>
+        <button onClick={onClose} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg">
+          Back
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <AIAnalysisReview
+      patient={patient}
+      assessment={assessment}
+      onClose={onClose}
+      onApprove={async (notes) => {
+        const { error: updErr } = await supabase
+          .from('wound_assessments')
+          .update({
+            status: 'approved',
+            clinical_notes: notes ? notes : assessment.clinical_notes
+          })
+          .eq('id', assessmentId);
+        
+        if (updErr) {
+          alert(`Error saving sign-off: ${updErr.message}`);
+        } else {
+          alert('AI findings successfully approved and signed off to EHR!');
+          onClose();
+        }
+      }}
+      onReject={async () => {
+        const { error: updErr } = await supabase
+          .from('wound_assessments')
+          .update({ status: 'rejected' })
+          .eq('id', assessmentId);
+        
+        if (updErr) {
+          alert(`Error rejecting: ${updErr.message}`);
+        } else {
+          alert('AI findings rejected.');
+          onClose();
+        }
+      }}
+      onFlag={async () => {
+        const { error: updErr } = await supabase
+          .from('wound_assessments')
+          .update({ status: 'review_required' })
+          .eq('id', assessmentId);
+        
+        if (updErr) {
+          alert(`Error forwarding: ${updErr.message}`);
+        } else {
+          alert('Wound forwarded to wound care specialist.');
+          onClose();
+        }
+      }}
+    />
+  );
 }

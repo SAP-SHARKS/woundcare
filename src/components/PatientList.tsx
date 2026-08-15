@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { Users, Plus, Search, ChevronRight, X, Calendar, AlertTriangle } from 'lucide-react';
+import PatientForm from './PatientForm';
 
 interface Props {
   organizationId: string | null;
@@ -29,11 +30,6 @@ const dname = (p: Patient) => (p.first_name && p.last_name) ? `${p.first_name} $
 const age = (dob: string | null) => dob ? Math.floor((Date.now() - new Date(dob).getTime()) / 31_557_600_000) : null;
 const risk = (wc: number) => wc >= 3 ? 'high' : wc >= 1 ? 'medium' : 'low';
 
-const EMPTY_FORM = {
-  first_name: '', last_name: '', mrn: '', dob: '', sex: '',
-  phone: '', email: '', wound_type: '', onset_date: '',
-};
-
 export default function PatientList({ organizationId, onSelectPatient }: Props) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [woundCounts, setWoundCounts] = useState<Map<string, number>>(new Map());
@@ -42,8 +38,6 @@ export default function PatientList({ organizationId, onSelectPatient }: Props) 
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -93,32 +87,6 @@ export default function PatientList({ organizationId, onSelectPatient }: Props) 
     );
   }, [patients, search]);
 
-  const handleCreate = async () => {
-    if (!form.first_name.trim() || !form.last_name.trim()) return;
-    setSaving(true);
-    const full_name = `${form.first_name.trim()} ${form.last_name.trim()}`;
-    const patient_id_code = form.mrn.trim() || `P-${Date.now()}`;
-    const { error: insErr } = await supabase.from('patients').insert({
-      first_name: form.first_name.trim(),
-      last_name: form.last_name.trim(),
-      full_name,
-      mrn: form.mrn.trim(),
-      dob: form.dob || null,
-      sex: form.sex || null,
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-      wound_type: form.wound_type.trim() || 'Unspecified',
-      onset_date: form.onset_date || new Date().toISOString().slice(0, 10),
-      patient_id_code,
-      organization_id: organizationId,
-      status: 'active',
-    });
-    setSaving(false);
-    if (insErr) { setError(insErr.message); return; }
-    setForm(EMPTY_FORM);
-    setShowModal(false);
-    fetchData();
-  };
 
   /* ── Loading ── */
   if (loading) {
@@ -266,70 +234,17 @@ export default function PatientList({ organizationId, onSelectPatient }: Props) 
 
       <p className="text-xs text-slate-400 text-right">{filtered.length} patient{filtered.length !== 1 ? 's' : ''}</p>
 
-      {/* ── Add Patient Modal ── */}
+      {/* ── Add Patient Drawer ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white px-6 py-4 border-b border-slate-100 flex items-center justify-between rounded-t-2xl">
-              <h2 className="text-base font-semibold text-slate-900">Add Patient</h2>
-              <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-                <X className="w-5 h-5 text-slate-400" />
-              </button>
-            </div>
-            <div className="px-6 py-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="First Name *" value={form.first_name} onChange={v => setForm(f => ({ ...f, first_name: v }))} />
-                <Field label="Last Name *" value={form.last_name} onChange={v => setForm(f => ({ ...f, last_name: v }))} />
-              </div>
-              <Field label="MRN" value={form.mrn} onChange={v => setForm(f => ({ ...f, mrn: v }))} placeholder="Medical record number" />
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Date of Birth" value={form.dob} onChange={v => setForm(f => ({ ...f, dob: v }))} type="date" />
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Sex</label>
-                  <select value={form.sex} onChange={e => setForm(f => ({ ...f, sex: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400">
-                    <option value="">Select</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Phone" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} type="tel" />
-                <Field label="Email" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} type="email" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Wound Type" value={form.wound_type} onChange={v => setForm(f => ({ ...f, wound_type: v }))} placeholder="e.g. Diabetic ulcer" />
-                <Field label="Onset Date" value={form.onset_date} onChange={v => setForm(f => ({ ...f, onset_date: v }))} type="date" />
-              </div>
-            </div>
-            <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3">
-              <button onClick={() => setShowModal(false)}
-                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                Cancel
-              </button>
-              <button onClick={handleCreate} disabled={saving || !form.first_name.trim() || !form.last_name.trim()}
-                className="px-5 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
-                {saving ? 'Creating…' : 'Create Patient'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <PatientForm
+          organizationId={organizationId}
+          onClose={() => setShowModal(false)}
+          onSaved={() => {
+            setShowModal(false);
+            fetchData();
+          }}
+        />
       )}
-    </div>
-  );
-}
-
-function Field({ label, value, onChange, type = 'text', placeholder }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
-}) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1.5">{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition" />
     </div>
   );
 }

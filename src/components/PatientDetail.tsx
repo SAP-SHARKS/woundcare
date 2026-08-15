@@ -3,10 +3,14 @@ import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/audit';
 import {
   ArrowLeft, Plus, MapPin, Calendar, Activity, TrendingDown,
-  TrendingUp, Minus, AlertTriangle, FileText, Heart, Stethoscope, User, ClipboardPlus,
-  CheckCircle2, XCircle, Eye, Image,
+  TrendingUp, Minus, AlertTriangle, FileText, Heart, Stethoscope, User,
+  CheckCircle2, XCircle, Eye, Edit,
 } from 'lucide-react';
 import AssessmentForm from './AssessmentForm';
+import PatientForm from './PatientForm';
+import WoundForm, { parseWoundLocation } from './WoundForm';
+import WoundDashboard from './WoundDashboard';
+import AssessmentComparison from './AssessmentComparison';
 
 interface Props {
   patientId: string;
@@ -22,8 +26,6 @@ const WOUND_TYPES: Record<string, string> = {
   surgical_wound: 'Surgical Wound', traumatic_wound: 'Traumatic Wound',
   skin_tear: 'Skin Tear', other: 'Other',
 };
-const WOUND_SIDES = ['left', 'right', 'midline', 'bilateral'] as const;
-const WOUND_TYPE_KEYS = Object.keys(WOUND_TYPES);
 
 function age(dob: string | null) {
   if (!dob) return null;
@@ -75,14 +77,15 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
   const [tab, setTab] = useState<Tab>('wounds');
   const [expandedWound, setExpandedWound] = useState<string | null>(null);
   const [showNewWound, setShowNewWound] = useState(false);
-  const [newWound, setNewWound] = useState({ location_description: '', wound_side: 'left', wound_type: 'other', date_first_observed: new Date().toISOString().slice(0, 10) });
-  const [saving, setSaving] = useState(false);
+  const [editingWound, setEditingWound] = useState<any>(null);
   const [assessmentWoundId, setAssessmentWoundId] = useState<string | null>(null);
   const [reviewingAssessment, setReviewingAssessment] = useState<any>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const [reviewSaving, setReviewSaving] = useState(false);
   const [imagesByAssessment, setImagesByAssessment] = useState<Record<string, any[]>>({});
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [showEditPatient, setShowEditPatient] = useState(false);
+  const [comparingWound, setComparingWound] = useState<any>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -122,20 +125,6 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { logAudit('patient.view', 'patient', patientId, organizationId); }, [patientId, organizationId]);
 
-  const createWound = async () => {
-    setSaving(true);
-    try {
-      const { error: e } = await supabase.from('wounds').insert({ ...newWound, patient_id: patientId, organization_id: organizationId });
-      if (e) throw e;
-      setShowNewWound(false);
-      setNewWound({ location_description: '', wound_side: 'left', wound_type: 'other', date_first_observed: new Date().toISOString().slice(0, 10) });
-      await fetchData();
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   async function handleReview(newStatus: 'approved' | 'draft') {
     if (!reviewingAssessment) return;
@@ -231,9 +220,14 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
                 </div>
               </div>
             </div>
-            <button onClick={() => setShowNewWound(true)} className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 active:bg-teal-800 transition-colors shadow-sm self-start">
-              <Plus className="w-4 h-4" /> New Wound
-            </button>
+            <div className="flex gap-2 self-start">
+              <button onClick={() => setShowEditPatient(true)} className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
+                <Edit className="w-4 h-4 text-slate-500" /> Edit Profile
+              </button>
+              <button onClick={() => setShowNewWound(true)} className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 active:bg-teal-800 transition-colors shadow-sm">
+                <Plus className="w-4 h-4" /> New Wound
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -286,8 +280,15 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${w.status === 'active' ? 'bg-teal-500' : 'bg-slate-300'}`} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-900 truncate">{w.location_description || 'Unnamed wound'}</span>
+                        <span className="text-sm font-medium text-slate-900 truncate">
+                          {parseWoundLocation(w.location_description).description || 'Unnamed wound'}
+                        </span>
                         <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 capitalize">{w.wound_side}</span>
+                        {parseWoundLocation(w.location_description).classification && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-250 capitalize">
+                            {parseWoundLocation(w.location_description).classification}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
                         <span>{WOUND_TYPES[w.wound_type] || w.wound_type}</span>
@@ -301,58 +302,16 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
                     </div>
                   </button>
                   {expanded && (
-                    <div className="border-t border-slate-100 px-4 py-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Assessment Timeline</div>
-                        {w.status === 'active' && (
-                          <button onClick={(e) => { e.stopPropagation(); setAssessmentWoundId(w.id); }} className="flex items-center gap-1 text-xs font-medium text-teal-600 hover:text-teal-700 transition-colors">
-                            <ClipboardPlus className="w-3.5 h-3.5" /> New Assessment
-                          </button>
-                        )}
-                      </div>
-                      {wa.length === 0 ? (
-                        <p className="text-xs text-slate-400">No assessments yet</p>
-                      ) : (
-                        <div className="space-y-2 max-h-64 overflow-y-auto">
-                          {[...wa].reverse().map((a: any) => {
-                            const imgs = imagesByAssessment[a.id] || [];
-                            return (
-                              <div key={a.id} className="border border-slate-100 rounded-lg p-2.5 hover:bg-slate-50/50 transition-colors">
-                                <div className="flex items-center gap-3 text-xs">
-                                  <span className="text-slate-500 w-24 flex-shrink-0">{fmtDate(a.assessment_date)}</span>
-                                  <span className="font-medium text-slate-700 w-20">{Number(a.area_cm2).toFixed(1)} cm²</span>
-                                  <span className="text-slate-500">{a.length_cm}x{a.width_cm}x{a.depth_cm} cm</span>
-                                  {a.pain_score > 0 && <span className="text-red-500">Pain {a.pain_score}/10</span>}
-                                  <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                                    a.status === 'approved' ? 'bg-emerald-50 text-emerald-700' :
-                                    a.status === 'pending_review' ? 'bg-amber-50 text-amber-700' :
-                                    'bg-slate-100 text-slate-500'
-                                  }`}>{a.status === 'pending_review' ? 'Pending Review' : a.status}</span>
-                                </div>
-                                {imgs.length > 0 && (
-                                  <div className="flex gap-1.5 mt-2">
-                                    {imgs.map((img: any) => (
-                                      <button key={img.id} type="button" onClick={(e) => { e.stopPropagation(); loadImageUrl(img.storage_path); }}
-                                        className="w-12 h-12 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center hover:border-teal-300 transition-colors overflow-hidden">
-                                        <Image className="w-4 h-4 text-slate-400" />
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                                {a.status === 'pending_review' && (
-                                  <div className="flex gap-1.5 mt-2">
-                                    <button onClick={(e) => { e.stopPropagation(); setReviewingAssessment(a); setReviewNotes(''); }}
-                                      className="flex items-center gap-1 px-2.5 py-1 bg-teal-50 text-teal-700 text-[11px] font-medium rounded-md hover:bg-teal-100 transition-colors">
-                                      <Eye className="w-3 h-3" /> Review
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
+                    <WoundDashboard
+                      wound={w}
+                      assessments={wa}
+                      imagesByAssessment={imagesByAssessment}
+                      onNewAssessment={() => setAssessmentWoundId(w.id)}
+                      onEditWound={() => setEditingWound(w)}
+                      onCompare={() => setComparingWound(w)}
+                      onReviewAssessment={(a) => { setReviewingAssessment(a); setReviewNotes(''); }}
+                      onLoadImageUrl={loadImageUrl}
+                    />
                   )}
                 </div>
               );
@@ -381,7 +340,7 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
                     return (
                       <div key={a.id} className="sm:grid sm:grid-cols-[1fr_0.8fr_0.6fr_0.5fr_0.5fr_0.4fr] gap-2 px-4 py-3 hover:bg-slate-50 text-sm">
                         <span className="text-slate-700">{fmtDate(a.assessment_date)}</span>
-                        <span className="text-slate-600 truncate">{w?.location_description || '—'}</span>
+                        <span className="text-slate-600 truncate">{w ? parseWoundLocation(w.location_description).description : '—'}</span>
                         <span className="font-medium text-slate-800">{Number(a.area_cm2).toFixed(1)} cm²</span>
                         <span className="text-xs text-slate-500">G{a.granulation_pct}% S{a.slough_pct}%</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium w-fit ${
@@ -525,49 +484,52 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
         />
       )}
 
-      {/* New Wound Modal */}
+      {/* New Wound Drawer */}
       {showNewWound && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowNewWound(false)} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
-            <h2 className="text-base font-semibold text-slate-900 mb-4">New Wound</h2>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Location Description *</label>
-                <input value={newWound.location_description} onChange={e => setNewWound(s => ({ ...s, location_description: e.target.value }))} placeholder="e.g. Left plantar forefoot"
-                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Side</label>
-                  <select value={newWound.wound_side} onChange={e => setNewWound(s => ({ ...s, wound_side: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition">
-                    {WOUND_SIDES.map(s => <option key={s} value={s} className="capitalize">{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Wound Type</label>
-                  <select value={newWound.wound_type} onChange={e => setNewWound(s => ({ ...s, wound_type: e.target.value }))}
-                    className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition">
-                    {WOUND_TYPE_KEYS.map(k => <option key={k} value={k}>{WOUND_TYPES[k]}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Date First Observed</label>
-                <input type="date" value={newWound.date_first_observed} onChange={e => setNewWound(s => ({ ...s, date_first_observed: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition" />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-5">
-              <button onClick={() => setShowNewWound(false)} className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
-              <button onClick={createWound} disabled={saving || !newWound.location_description.trim()}
-                className="px-4 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 active:bg-teal-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                {saving ? 'Saving…' : 'Create Wound'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <WoundForm
+          patientId={patientId}
+          organizationId={organizationId}
+          onClose={() => setShowNewWound(false)}
+          onSaved={() => {
+            setShowNewWound(false);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Edit Wound Drawer */}
+      {editingWound && (
+        <WoundForm
+          wound={editingWound}
+          patientId={patientId}
+          organizationId={organizationId}
+          onClose={() => setEditingWound(null)}
+          onSaved={() => {
+            setEditingWound(null);
+            fetchData();
+          }}
+        />
+      )}
+      {/* Edit Patient Drawer */}
+      {showEditPatient && (
+        <PatientForm
+          patient={p}
+          organizationId={organizationId}
+          onClose={() => setShowEditPatient(false)}
+          onSaved={() => {
+            setShowEditPatient(false);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Assessment Comparison Workspace Overlay */}
+      {comparingWound && (
+        <AssessmentComparison
+          wound={comparingWound}
+          assessments={assessmentsByWound[comparingWound.id] || []}
+          onClose={() => setComparingWound(null)}
+        />
       )}
     </div>
   );

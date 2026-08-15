@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/audit';
 import { X, Save, AlertTriangle, Camera, Upload, Trash2, Image } from 'lucide-react';
+import WoundCamera from './WoundCamera';
 
 interface Props {
   woundId: string;
@@ -49,6 +50,13 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
+
+  function handleCameraCapture(simulatedUrl: string) {
+    const dummyFile = new File([new Blob()], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
+    setPhotos(prev => [...prev, { file: dummyFile, preview: simulatedUrl }]);
+    setShowCamera(false);
+  }
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -215,7 +223,7 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => cameraInputRef.current?.click()}
+                  onClick={() => setShowCamera(true)}
                   className="flex-1 flex items-center justify-center gap-2 py-6 border-2 border-dashed border-teal-300 bg-teal-50/50 rounded-xl text-sm font-medium text-teal-700 hover:bg-teal-50 hover:border-teal-400 transition-colors"
                 >
                   <Camera className="w-5 h-5" />
@@ -402,6 +410,13 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
           </div>
         </form>
       </div>
+
+      {showCamera && (
+        <WoundCamera
+          onClose={() => setShowCamera(false)}
+          onCapture={handleCameraCapture}
+        />
+      )}
     </div>
   );
 }
