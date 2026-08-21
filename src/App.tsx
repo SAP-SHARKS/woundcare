@@ -8,7 +8,6 @@ export default function App() {
   const [bypassAuth, setBypassAuth] = useState<any>(null);
 
   const activeAuth = bypassAuth || auth;
-  const demoEnabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO_MODE === 'true';
 
   const handleBypass = (role: UserRole) => {
     setBypassAuth({
@@ -50,7 +49,7 @@ export default function App() {
     return <div className="min-h-screen bg-slate-50 flex items-center justify-center p-5"><div className="max-w-md bg-white border border-red-200 rounded-xl p-5"><h1 className="font-semibold text-red-800">Access could not be verified</h1><p className="text-sm text-slate-600 mt-2">{activeAuth.error}</p><button onClick={() => void signOut().then(() => location.reload())} className="wt-button mt-4">Return to sign in</button></div></div>;
   }
   if (!activeAuth.user) {
-    return <AuthPage onBypass={handleBypass} allowBypass={demoEnabled} />;
+    return <AuthPage onBypass={handleBypass} allowBypass />;
   }
 
   return <AppShell auth={activeAuth} onExitPreview={() => setBypassAuth(null)} />;
