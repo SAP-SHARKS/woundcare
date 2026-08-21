@@ -67,7 +67,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function AppShell({ auth }: Props) {
-  const [screen, setScreen] = useState<Screen>({ name: 'dashboard' });
+  const [screen, setScreen] = useState<Screen>({ name: 'patients' });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<PatientResult[]>([]);
@@ -202,29 +202,29 @@ export default function AppShell({ auth }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-[#f7f5f2] flex">
       {/* Sidebar - desktop */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-slate-200 fixed inset-y-0 z-30">
+      <aside className="hidden lg:flex lg:flex-col lg:w-[238px] bg-[#fffefc] border-r border-stone-200 fixed inset-y-0 z-30">
         <div className="px-5 py-5 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center">
               <Activity className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-slate-900">WoundCare</h1>
-              <p className="text-[11px] text-slate-400">Clinical Platform</p>
+              <h1 className="text-[14.5px] font-bold text-stone-900 tracking-[-.2px]">WoundTrack</h1>
+              <p className="text-[10px] font-medium text-stone-400">Al Nakheel Wound Clinic</p>
             </div>
           </div>
         </div>
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 px-[10px] py-4 space-y-0.5 overflow-y-auto">
           {navItems.map(item => (
             <button
               key={item.screen.name}
               onClick={() => navigate(item.screen)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+              className={`w-full flex items-center gap-3 px-3 h-[34px] rounded-[9px] text-[12.5px] transition-all ${
                 screen.name === item.screen.name
-                  ? 'bg-teal-50 text-teal-700 font-medium'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-[#eef4f3] text-[#1f6f6b] font-semibold'
+                  : 'text-stone-600 hover:bg-[#faf8f5] hover:text-stone-900'
               }`}
             >
               <item.icon className="w-[18px] h-[18px] flex-shrink-0" />
@@ -292,10 +292,10 @@ export default function AppShell({ auth }: Props) {
       )}
 
       {/* Main content */}
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 lg:ml-[238px]">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200">
-          <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-20 bg-[#fffefc] border-b border-stone-200">
+          <div className="px-4 sm:px-6 h-[58px] flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1.5 hover:bg-slate-100 rounded-lg">
                 <Menu className="w-5 h-5 text-slate-600" />
@@ -386,7 +386,7 @@ export default function AppShell({ auth }: Props) {
           )}
         </header>
 
-        <div className="p-4 sm:p-6">
+        <div className="p-4 sm:p-7 pb-11">
           {renderScreen(screen, auth, navigate)}
         </div>
       </main>

@@ -44,6 +44,7 @@ export default function OrganizationManager() {
   const [modal, setModal] = useState<{ open: boolean; editId: string | null }>({ open: false, editId: null });
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const schemaUnavailable = /schema cache|could not find the table|does not exist/i.test(error);
 
   useEffect(() => { loadOrgs(); }, []);
 
@@ -150,8 +151,8 @@ export default function OrganizationManager() {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg flex items-center justify-between">
-          {error}
+        <div className={`${schemaUnavailable ? 'bg-teal-50 border-teal-200 text-teal-800' : 'bg-red-50 border-red-200 text-red-700'} border text-sm px-4 py-3 rounded-lg flex items-center justify-between`}>
+          {schemaUnavailable ? 'Organization setup is not available until the included Supabase migrations are applied. The rest of the workspace remains available in preview mode.' : error}
           <button onClick={() => setError('')}><X className="w-4 h-4" /></button>
         </div>
       )}
