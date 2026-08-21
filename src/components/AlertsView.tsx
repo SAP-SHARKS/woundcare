@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, AlertTriangle, CheckCircle2, Clock, Filter } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -32,11 +32,7 @@ export default function AlertsView({ organizationId }: { organizationId: string 
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<StatusFilter>('all');
 
-  useEffect(() => {
-    if (organizationId) fetchAlerts();
-  }, [organizationId]);
-
-  async function fetchAlerts() {
+  const fetchAlerts = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
       .from('alerts')
@@ -45,7 +41,11 @@ export default function AlertsView({ organizationId }: { organizationId: string 
       .order('created_at', { ascending: false });
     setAlerts(data || []);
     setLoading(false);
-  }
+  }, [organizationId]);
+
+  useEffect(() => {
+    if (organizationId) void fetchAlerts();
+  }, [organizationId, fetchAlerts]);
 
   async function updateStatus(id: string, status: 'acknowledged' | 'resolved') {
     await supabase.from('alerts').update({ status }).eq('id', id);

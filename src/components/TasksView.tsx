@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ClipboardList, Plus, CheckCircle2, Clock, X, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -38,11 +38,7 @@ export default function TasksView({ organizationId }: { organizationId: string |
   const [form, setForm] = useState({ title: '', description: '', priority: 'medium' as Task['priority'], due_date: '' });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (organizationId) fetchTasks();
-  }, [organizationId]);
-
-  async function fetchTasks() {
+  const fetchTasks = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
       .from('tasks')
@@ -51,7 +47,11 @@ export default function TasksView({ organizationId }: { organizationId: string |
       .order('created_at', { ascending: false });
     setTasks(data || []);
     setLoading(false);
-  }
+  }, [organizationId]);
+
+  useEffect(() => {
+    if (organizationId) void fetchTasks();
+  }, [organizationId, fetchTasks]);
 
   async function createTask() {
     if (!form.title.trim() || !organizationId) return;

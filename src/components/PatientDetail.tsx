@@ -90,6 +90,20 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError('');
+    if (patientId.startsWith('sample-')) {
+      const demoPatient = {
+        id: patientId, full_name: patientId === 'sample-p2' ? 'Fatimah Al-Harbi' : 'Mohammed Al-Hassan',
+        mrn: patientId === 'sample-p2' ? '529381-B' : '728382-A', dob: '1968-03-12', sex: 'male',
+        diabetes: true, diabetes_type: '2', neuropathy: true, smoking: true, status: 'active'
+      };
+      const demoWound = { id: `${patientId}-w1`, patient_id: patientId, status: 'active', wound_type: 'diabetic_foot_ulcer', wound_side: 'right', location_description: 'R plantar forefoot', date_first_observed: '2026-04-03' };
+      const demoAssessments = [
+        { id: 'demo-a1', wound_id: demoWound.id, assessment_date: '2026-05-08', area_cm2: 12.4, granulation_pct: 45, slough_pct: 45, eschar_pct: 10, pain_score: 4, status: 'approved' },
+        { id: 'demo-a2', wound_id: demoWound.id, assessment_date: '2026-05-22', area_cm2: 9.8, granulation_pct: 58, slough_pct: 34, eschar_pct: 8, pain_score: 3, status: 'approved' },
+        { id: 'demo-a3', wound_id: demoWound.id, assessment_date: '2026-06-05', area_cm2: 7.6, granulation_pct: 64, slough_pct: 28, eschar_pct: 8, pain_score: 3, status: 'pending_review' },
+      ];
+      setPatient(demoPatient); setWounds([demoWound]); setAssessmentsByWound({ [demoWound.id]: demoAssessments }); setImagesByAssessment({}); setLoading(false); return;
+    }
     try {
       const { data: p, error: pe } = await supabase.from('patients').select('*').eq('id', patientId).single();
       if (pe) throw pe;
