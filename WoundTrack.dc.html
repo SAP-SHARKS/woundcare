@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#f6f4f1;color:#1c1917;-webkit-font-smoothing:antialiased}
+  *{box-sizing:border-box}
+  a{color:#1f6f6b;text-decoration:none}
+  a:hover{color:#17544f;text-decoration:underline}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:rgba(28,25,23,.16);border-radius:8px;border:3px solid #f6f4f1}
+  @keyframes wtspin{to{transform:rotate(360deg)}}
+  @keyframes wtpulse{0%,100%{opacity:.35}50%{opacity:.9}}
+  @keyframes wtin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @keyframes wtsweep{0%{transform:translateY(-100%)}100%{transform:translateY(320%)}}
+</style>
+</helmet>
+
+<div data-wt-shell="1" style="{{ shellStyle }}">
+
+  <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(28,25,23,.42);z-index:59"></div>
+  </sc-if>
+
+  <aside style="{{ asideStyle }}">
+    <div style="padding:20px 18px 14px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <div style="width:26px;height:26px;flex:none;border-radius:8px;background:#1f6f6b;position:relative">
+          <div style="position:absolute;inset:7px;border-radius:50% 40% 55% 45%;background:#f6c9a8"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;line-height:1.1">
+          <span style="font-size:14.5px;font-weight:700;letter-spacing:-.2px">WoundTrack</span>
+          <span style="font-size:10px;color:#8a827b;font-weight:500">{{ clinicName }}</span>
+        </div>
+      </div>
+      <div style="display:flex;padding:3px;gap:3px;background:#f2efeb;border-radius:9px">
+        <button onClick="{{ setNurse }}" style="{{ tabNurse }}">Nurse</button>
+        <button onClick="{{ setAdmin }}" style="{{ tabAdmin }}">Admin</button>
+      </div>
+    </div>
+
+    <nav style="flex:1;padding:6px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="5">
+        <button onClick="{{ item.go }}" style="{{ item.style }}">
+          <span style="{{ item.dot }}"></span>
+          <span style="flex:1;text-align:left">{{ item.label }}</span>
+          <span style="{{ item.badgeStyle }}">{{ item.badge }}</span>
+        </button>
+      </sc-for>
+    </nav>
+
+    <div style="padding:12px 14px;border-top:1px solid rgba(28,25,23,.08);display:flex;align-items:center;gap:9px;flex:none">
+      <div style="width:28px;height:28px;flex:none;border-radius:50%;background:#e6efee;color:#1f6f6b;display:grid;place-items:center;font-size:11px;font-weight:700">{{ userInitials }}</div>
+      <div style="flex:1;min-width:0;line-height:1.25">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ userName }}</div>
+        <div style="font-size:10.5px;color:#8a827b">{{ userRole }}</div>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header style="{{ headerStyle }}">
+      <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ openDrawer }}" aria-label="Open menu" style="width:38px;height:38px;flex:none;border-radius:10px;border:1px solid rgba(28,25,23,.12);background:#fffefc;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px">
+          <span style="width:17px;height:1.8px;border-radius:2px;background:#1c1917"></span>
+          <span style="width:17px;height:1.8px;border-radius:2px;background:#1c1917"></span>
+          <span style="width:17px;height:1.8px;border-radius:2px;background:#1c1917"></span>
+        </button>
+      </sc-if>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#8a827b;min-width:0;overflow:hidden;white-space:nowrap">
+        <span>{{ crumbRoot }}</span>
+        <sc-if value="{{ crumbLeaf }}" hint-placeholder-val="{{ true }}">
+          <span style="opacity:.5">/</span>
+          <span style="color:#1c1917;font-weight:600">{{ crumbLeaf }}</span>
+        </sc-if>
+      </div>
+      <div style="flex:1"></div>
+      <div style="{{ searchStyle }}">
+        <div style="width:11px;height:11px;border:1.6px solid #a8a09a;border-radius:50%"></div>
+        <input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Search patients, MRN, wound ID" style="flex:1;border:none;background:none;outline:none;font-family:'DM Sans',sans-serif;font-size:12.5px;color:#1c1917" />
+      </div>
+      <button onClick="{{ goAlerts }}" style="position:relative;width:33px;height:33px;border-radius:8px;border:1px solid rgba(28,25,23,.1);background:#fffefc;cursor:pointer;display:grid;place-items:center">
+        <div style="width:12px;height:12px;border:1.6px solid #57514c;border-radius:4px 4px 6px 6px"></div>
+        <span style="position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:9px;background:#b4362f;color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;font-family:'IBM Plex Mono',monospace">3</span>
+      </button>
+    </header>
+
+    <div style="flex:1;overflow-y:auto;overflow-x:auto;position:relative;-webkit-overflow-scrolling:touch">
+
+      <!-- ============ PATIENT ROSTER ============ -->
+      <sc-if value="{{ isRoster }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ pad }};max-width:1240px;animation:wtin .22s ease both">
+          <div style="{{ pageHead }}">
+            <div>
+              <h1 style="margin:0 0 5px;font-size:25px;font-weight:700;letter-spacing:-.5px">Patients</h1>
+              <p style="margin:0;font-size:13px;color:#78716c">18 active wounds across 14 patients · triage refreshed 4 min ago</p>
+            </div>
+            <div style="flex:1"></div>
+            <button onClick="{{ goNewPatient }}" style="height:36px;padding:0 15px;border-radius:9px;border:1px solid rgba(28,25,23,.12);background:#fffefc;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">Register patient</button>
+            <button onClick="{{ startCheckinFromRoster }}" style="height:36px;padding:0 16px;border-radius:9px;border:none;background:#1f6f6b;color:#fff;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 1px 2px rgba(31,111,107,.4);white-space:nowrap">New check-in</button>
+          </div>
+
+          <div style="{{ gridKpi }};margin-bottom:18px">
+            <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:12px;padding:14px 15px">
+              <div style="font-size:11px;font-weight:600;color:#b4362f;letter-spacing:.3px;text-transform:uppercase">Urgent</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:27px;font-weight:600;line-height:1.2">2</div>
+              <div style="font-size:11.5px;color:#8a827b">oldest unacknowledged 41 min</div>
+            </div>
+            <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:12px;padding:14px 15px">
+              <div style="font-size:11px;font-weight:600;color:#a86a1f;letter-spacing:.3px;text-transform:uppercase">Needs review</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:27px;font-weight:600;line-height:1.2">5</div>
+              <div style="font-size:11.5px;color:#8a827b">SLA 24 h · 1 due today</div>
+            </div>
+            <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:12px;padding:14px 15px">
+              <div style="font-size:11px;font-weight:600;color:#8a827b;letter-spacing:.3px;text-transform:uppercase">Check-ins due</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:27px;font-weight:600;line-height:1.2">7</div>
+              <div style="font-size:11.5px;color:#8a827b">2 overdue &gt; 48 h</div>
+            </div>
+            <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:12px;padding:14px 15px">
+              <div style="font-size:11px;font-weight:600;color:#3f7a4a;letter-spacing:.3px;text-transform:uppercase">Improving</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:27px;font-weight:600;line-height:1.2">9</div>
+              <div style="font-size:11.5px;color:#8a827b">median −18% area / 2 wks</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:6px;margin-bottom:12px">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+              <button onClick="{{ f.go }}" style="{{ f.style }}">{{ f.label }}</button>
+            </sc-for>
+          </div>
+
+          <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;overflow:hidden;{{ minW }}">
+            <div style="{{ rosterHead }};padding:10px 18px;background:#faf8f5;border-bottom:1px solid rgba(28,25,23,.08);font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#8a827b">
+              <div></div><div>Patient</div><div>Wound</div><div>Area</div><div>Trend</div><div>Last check-in</div><div>Status</div>
+            </div>
+            <sc-for list="{{ rows }}" as="p" hint-placeholder-count="6">
+              <div onClick="{{ p.open }}" style="{{ rosterRow }};padding:13px 18px;align-items:center;border-bottom:1px solid rgba(28,25,23,.06);cursor:pointer" style-hover="background:#faf8f5">
+                <div style="width:38px;height:38px;border-radius:9px;overflow:hidden;background:#efe9e3;position:relative">
+                  <div style="{{ p.blob }}"></div>
+                </div>
+                <div style="min-width:0">
+                  <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a827b">{{ p.meta }}</div>
+                </div>
+                <div style="min-width:0">
+                  <div style="font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.woundType }}</div>
+                  <div style="font-size:11px;color:#8a827b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.site }}</div>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:500">{{ p.area }}</div>
+                <div style="display:flex;align-items:center;gap:7px">
+                  <span style="{{ p.trendArrow }}"></span>
+                  <span style="{{ p.trendText }}">{{ p.trend }}</span>
+                </div>
+                <div>
+                  <div style="font-size:12px">{{ p.last }}</div>
+                  <div style="font-size:10.5px;color:#8a827b">by {{ p.lastBy }}</div>
+                </div>
+                <div style="display:flex;justify-content:flex-end">
+                  <span style="{{ p.pill }}">{{ p.status }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ PATIENT DETAIL ============ -->
+      <sc-if value="{{ isPatient }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ pad }};max-width:1240px;animation:wtin .22s ease both">
+          <button onClick="{{ goRoster }}" style="border:none;background:none;padding:0;margin:0 0 14px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#1f6f6b;cursor:pointer">&#8592; All patients</button>
+
+          <div style="{{ ptHead }}">
+            <div style="width:64px;height:64px;flex:none;border-radius:14px;background:#efe9e3;position:relative;overflow:hidden">
+              <div style="position:absolute;inset:12px;border-radius:58% 42% 48% 52% / 52% 56% 44% 48%;background:radial-gradient(60% 60% at 40% 35%,#c9705e,#9c4b45 60%,#7d3a3a)"></div>
+            </div>
+            <div style="flex:1;min-width:200px">
+              <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+                <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-.5px">{{ pt.name }}</h1>
+                <span style="{{ pt.pill }}">{{ pt.status }}</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:#78716c">
+                <span style="font-family:'IBM Plex Mono',monospace">MRN {{ pt.mrn }}</span>
+                <span>{{ pt.demo }}</span>
+                <span>Assigned: {{ pt.clinician }}</span>
+                <span>Consent v2.1 · signed {{ pt.consent }}</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+                <sc-for list="{{ pt.risks }}" as="r" hint-placeholder-count="4">
+                  <span style="padding:3px 9px;border-radius:6px;background:#f2efeb;font-size:11px;font-weight:500;color:#57514c">{{ r }}</span>
+                </sc-for>
+              </div>
+            </div>
+            <div style="{{ ptActions }}">
+              <button onClick="{{ goExport }}" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid rgba(28,25,23,.12);background:#fffefc;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">Clinical summary</button>
+              <button onClick="{{ startCheckin }}" style="height:36px;padding:0 16px;border-radius:9px;border:none;background:#1f6f6b;color:#fff;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 1px 2px rgba(31,111,107,.4);white-space:nowrap">New check-in</button>
+            </div>
+          </div>
+
+          <div style="{{ woundTabRow }}">
+            <sc-for list="{{ woundTabs }}" as="w" hint-placeholder-count="2">
+              <button onClick="{{ w.go }}" style="{{ w.style }}">
+                <span style="font-weight:700">{{ w.id }}</span>
+                <span style="opacity:.75">{{ w.label }}</span>
+              </button>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ pt.alertOpen }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;gap:14px;padding:15px 17px;margin-bottom:18px;border-radius:12px;background:#fdf1ef;border:1px solid rgba(180,54,47,.24)">
+              <div style="width:8px;height:8px;flex:none;margin-top:6px;border-radius:50%;background:#b4362f"></div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:700;color:#8f2b25;margin-bottom:4px">{{ pt.alertTitle }}</div>
+                <div style="font-size:12.5px;color:#6b4340;line-height:1.55">{{ pt.alertBody }}</div>
+                <div style="display:flex;gap:14px;margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#9a6a66">
+                  <span>rule {{ pt.alertRule }}</span><span>fired {{ pt.alertTime }}</span><span>notified Dr. R. Nasser · SMS + in-app</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <button onClick="{{ ackAlert }}" style="height:30px;padding:0 12px;border-radius:8px;border:none;background:#b4362f;color:#fff;font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer">Acknowledge</button>
+                <button style="height:30px;padding:0 12px;border-radius:8px;border:1px solid rgba(180,54,47,.3);background:#fffefc;font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:600;color:#8f2b25;cursor:pointer">Escalate</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="{{ grid155 }}">
+
+            <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px 18px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <h2 style="margin:0;font-size:14px;font-weight:700">Photo timeline</h2>
+                <span style="font-size:11px;color:#8a827b">standardized capture · marker-calibrated</span>
+              </div>
+              <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px">
+                <sc-for list="{{ visits }}" as="v" hint-placeholder-count="5">
+                  <div onClick="{{ v.pick }}" style="{{ v.frameStyle }}">
+                    <div style="position:relative;height:112px;background:#efe9e3;overflow:hidden">
+                      <div style="{{ v.blob }}"></div>
+                      <div style="position:absolute;bottom:6px;right:6px;width:16px;height:16px;border-radius:3px;background:linear-gradient(135deg,#fff 50%,#1c1917 50%);border:1px solid rgba(0,0,0,.25)"></div>
+                    </div>
+                    <div style="padding:7px 9px">
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a827b">{{ v.date }}</div>
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600">{{ v.area }} cm²</div>
+                      <div style="{{ v.deltaStyle }}">{{ v.delta }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(28,25,23,.08)">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+                  <h2 style="margin:0;font-size:14px;font-weight:700">Side-by-side</h2>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a827b">baseline vs current · same scale</span>
+                </div>
+                <div style="{{ grid2 }}">
+                  <div>
+                    <div style="position:relative;height:186px;border-radius:11px;background:#efe9e3;overflow:hidden;border:1px solid rgba(28,25,23,.08)">
+                      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:150px;height:118px;border-radius:60% 40% 52% 48% / 48% 58% 42% 52%;background:radial-gradient(55% 55% at 42% 38%,#cf7a63,#a04f47 58%,#7c3a38)"></div>
+                      <div style="position:absolute;left:12px;bottom:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#fff;background:rgba(28,25,23,.6);padding:2px 6px;border-radius:4px">baseline · {{ pt.baselineDate }}</div>
+                    </div>
+                    <div style="display:flex;gap:14px;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#57514c">
+                      <span>{{ pt.baselineDims }}</span><span>{{ pt.baselineArea }} cm²</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="position:relative;height:186px;border-radius:11px;background:#efe9e3;overflow:hidden;border:1px solid rgba(28,25,23,.08)">
+                      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:104px;height:82px;border-radius:58% 42% 48% 52% / 52% 56% 44% 48%;background:radial-gradient(55% 55% at 42% 38%,#d08a6c,#a8584c 58%,#83403c)"></div>
+                      <sc-if value="{{ aiOn }}" hint-placeholder-val="{{ true }}">
+                        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:112px;height:90px;border-radius:58% 42% 48% 52% / 52% 56% 44% 48%;border:2px dashed rgba(31,111,107,.9);animation:wtpulse 2.6s ease-in-out infinite"></div>
+                        <div style="position:absolute;right:10px;top:10px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#0f3d3a;background:rgba(214,236,232,.95);padding:3px 7px;border-radius:5px;font-weight:600">AI boundary · conf 0.91</div>
+                      </sc-if>
+                      <div style="position:absolute;left:12px;bottom:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#fff;background:rgba(28,25,23,.6);padding:2px 6px;border-radius:4px">current · {{ pt.currentDate }}</div>
+                    </div>
+                    <div style="display:flex;gap:14px;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#57514c">
+                      <span>{{ pt.currentDims }}</span><span>{{ pt.currentArea }} cm²</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px 18px">
+                <h2 style="margin:0 0 4px;font-size:14px;font-weight:700">Wound area trend</h2>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a827b;margin-bottom:14px">cm² · {{ pt.trendWindow }}</div>
+                <div style="display:flex;align-items:flex-end;gap:9px;height:120px">
+                  <sc-for list="{{ visits }}" as="v" hint-placeholder-count="5">
+                    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;height:100%">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#57514c">{{ v.area }}</span>
+                      <div style="{{ v.barStyle }}"></div>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#a8a09a">{{ v.short }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(28,25,23,.08)">
+                  <div style="flex:1">
+                    <div style="font-size:10.5px;color:#8a827b;text-transform:uppercase;letter-spacing:.4px;font-weight:600">PUSH</div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600">{{ pt.push }}</div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-size:10.5px;color:#8a827b;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Area Δ</div>
+                    <div style="{{ pt.areaDeltaStyle }}">{{ pt.areaDelta }}</div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-size:10.5px;color:#8a827b;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Visits</div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600">{{ pt.visitCount }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px 18px">
+                <h2 style="margin:0 0 12px;font-size:14px;font-weight:700">Wound bed composition</h2>
+                <div style="display:flex;height:12px;border-radius:7px;overflow:hidden;margin-bottom:11px">
+                  <div style="{{ pt.granW }};background:#c9705e"></div>
+                  <div style="{{ pt.sloughW }};background:#d8c08a"></div>
+                  <div style="{{ pt.escharW }};background:#4a423c"></div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12px"><span style="width:9px;height:9px;border-radius:3px;background:#c9705e"></span><span style="flex:1">Granulation</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:500">{{ pt.gran }}%</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12px"><span style="width:9px;height:9px;border-radius:3px;background:#d8c08a"></span><span style="flex:1">Slough</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:500">{{ pt.slough }}%</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:12px"><span style="width:9px;height:9px;border-radius:3px;background:#4a423c"></span><span style="flex:1">Eschar</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:500">{{ pt.eschar }}%</span></div>
+                </div>
+                <sc-if value="{{ aiOn }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin-top:12px;padding:9px 11px;border-radius:9px;background:#eef5f4;font-size:11.5px;color:#1f5652;line-height:1.5">
+                    AI tissue segmentation · agreement with nurse entry <span style="font-family:'IBM Plex Mono',monospace;font-weight:600">0.88</span>. Nurse value is authoritative; AI shown for comparison only.
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px 18px">
+                <h2 style="margin:0 0 12px;font-size:14px;font-weight:700">Clinician response</h2>
+                <sc-for list="{{ pt.notes }}" as="n" hint-placeholder-count="2">
+                  <div style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid rgba(28,25,23,.07)">
+                    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:5px">
+                      <span style="font-size:12px;font-weight:600">{{ n.author }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#a8a09a">{{ n.time }}</span>
+                    </div>
+                    <div style="font-size:12.5px;line-height:1.55;color:#4a443f">{{ n.body }}</div>
+                    <div style="margin-top:6px;display:inline-block;padding:2px 8px;border-radius:6px;background:#f2efeb;font-size:10.5px;font-weight:600;color:#57514c">{{ n.tag }}</div>
+                  </div>
+                </sc-for>
+                <textarea placeholder="Add a nurse note for the reviewing clinician…" style="width:100%;min-height:64px;resize:vertical;border:1px solid rgba(28,25,23,.14);border-radius:9px;padding:9px 11px;font-family:'DM Sans',sans-serif;font-size:12.5px;outline:none;color:#1c1917"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ CHECK-IN WIZARD (hero flow) ============ -->
+      <sc-if value="{{ isCheckin }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ pad }};max-width:1180px;animation:wtin .22s ease both">
+          <div style="{{ pageHead }}">
+            <div>
+              <div style="font-size:11.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:#8a827b;margin-bottom:4px">Weekly check-in · visit 6</div>
+              <h1 style="margin:0;font-size:23px;font-weight:700;letter-spacing:-.4px">{{ pt.name }} <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;color:#8a827b">{{ pt.woundId }}</span></h1>
+            </div>
+            <div style="flex:1"></div>
+            <button onClick="{{ cancelCheckin }}" style="height:34px;padding:0 14px;border-radius:9px;border:1px solid rgba(28,25,23,.12);background:#fffefc;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer">Save draft &amp; exit</button>
+          </div>
+
+          <div style="{{ stepperStyle }}">
+            <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+              <div style="{{ s.wrap }}">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="{{ s.circle }}">{{ s.n }}</div>
+                  <div style="min-width:0">
+                    <div style="{{ s.label }}">{{ s.title }}</div>
+                    <div style="font-size:10.5px;color:#a8a09a;white-space:nowrap">{{ s.sub }}</div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <!-- step 1: identity -->
+          <sc-if value="{{ step0 }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ gridSide }}">
+              <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:20px">
+                <h2 style="margin:0 0 3px;font-size:15px;font-weight:700">Confirm patient &amp; wound</h2>
+                <p style="margin:0 0 18px;font-size:12.5px;color:#78716c">One wound per check-in. Each wound keeps its own identity, site and history.</p>
+                <div style="{{ grid2 }}">
+                  <div><div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:5px">PATIENT</div><div style="min-height:38px;border:1px solid rgba(28,25,23,.14);border-radius:9px;padding:8px 11px;display:flex;align-items:center;font-size:13px;line-height:1.35;background:#faf8f5">{{ pt.name }} · MRN {{ pt.mrn }}</div></div>
+                  <div><div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:5px">WOUND</div><div style="min-height:38px;border:1px solid rgba(28,25,23,.14);border-radius:9px;padding:8px 11px;display:flex;align-items:center;font-size:13px;line-height:1.35;background:#faf8f5">{{ pt.woundId }} · {{ pt.woundType }}</div></div>
+                  <div><div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:5px">ANATOMICAL SITE</div><div style="min-height:38px;border:1px solid rgba(28,25,23,.14);border-radius:9px;padding:8px 11px;display:flex;align-items:center;font-size:13px;line-height:1.35">{{ pt.site }}</div></div>
+                  <div><div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:5px">DRESSING IN USE</div><div style="min-height:38px;border:1px solid rgba(28,25,23,.14);border-radius:9px;padding:8px 11px;display:flex;align-items:center;font-size:13px;line-height:1.35">Foam + silver, off-loading boot</div></div>
+                </div>
+                <div style="margin-top:18px;padding:13px 15px;border-radius:11px;background:#faf8f5;border:1px solid rgba(28,25,23,.07)">
+                  <div style="font-size:12px;font-weight:600;margin-bottom:7px">Protocol version</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#57514c;line-height:1.7">form v3.2 · rules v1.8 · capture protocol DFU-standard-2<br />marker: 20 mm checker sticker, batch KSA-0426</div>
+                </div>
+              </div>
+              <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:18px">
+                <h3 style="margin:0 0 11px;font-size:13px;font-weight:700">Since last visit</h3>
+                <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:#4a443f">
+                  <div style="display:flex;justify-content:space-between"><span>Last check-in</span><span style="font-family:'IBM Plex Mono',monospace">7 days ago</span></div>
+                  <div style="display:flex;justify-content:space-between"><span>Last area</span><span style="font-family:'IBM Plex Mono',monospace">7.6 cm²</span></div>
+                  <div style="display:flex;justify-content:space-between"><span>Last pain</span><span style="font-family:'IBM Plex Mono',monospace">4 / 10</span></div>
+                  <div style="display:flex;justify-content:space-between"><span>Open alerts</span><span style="font-family:'IBM Plex Mono',monospace">0</span></div>
+                </div>
+                <div style="margin-top:14px;padding:11px 13px;border-radius:10px;background:#eef5f4;font-size:11.5px;line-height:1.55;color:#1f5652">Dressing change due today. Clinician asked for a close image of the medial edge.</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- step 2: guided capture (HERO) -->
+          <sc-if value="{{ step1 }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ gridSide }}">
+              <div style="background:#1c1917;border-radius:14px;padding:16px;position:relative;overflow:hidden">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="width:7px;height:7px;border-radius:50%;background:#e05a4d;animation:wtpulse 1.6s ease-in-out infinite"></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#c9c2bb">CAPTURE · overview frame 1 of 2</span>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a827b">{{ captureHint }}</span>
+                </div>
+
+                <div style="position:relative;height:392px;border-radius:11px;overflow:hidden;background:radial-gradient(70% 70% at 50% 45%,#3a332e,#221e1b)">
+                  <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:214px;height:168px;border-radius:60% 40% 50% 50% / 50% 58% 42% 50%;background:radial-gradient(55% 55% at 42% 38%,#d08a6c,#a8584c 58%,#7f3c38);filter:{{ captureBlur }}"></div>
+                  <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:300px;height:230px;border:1.5px dashed rgba(255,255,255,.35);border-radius:10px"></div>
+                  <div style="position:absolute;left:50%;top:14px;bottom:14px;width:1px;background:rgba(255,255,255,.16)"></div>
+                  <div style="position:absolute;top:50%;left:14px;right:14px;height:1px;background:rgba(255,255,255,.16)"></div>
+                  <div style="position:absolute;right:38px;bottom:40px;width:44px;height:44px;border-radius:5px;background:repeating-conic-gradient(#fff 0 25%,#1c1917 0 50%) 50%/22px 22px;border:2px solid rgba(255,255,255,.7);box-shadow:0 0 0 3px rgba(31,111,107,.55)"></div>
+                  <div style="position:absolute;right:34px;bottom:16px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#9ad3cc">marker 20 mm</div>
+                  <sc-if value="{{ scanning }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;left:0;right:0;top:0;height:32%;background:linear-gradient(180deg,rgba(31,111,107,0),rgba(56,178,168,.35));animation:wtsweep 1.1s linear infinite"></div>
+                  </sc-if>
+                  <div style="position:absolute;left:14px;top:14px;display:flex;flex-direction:column;gap:5px">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#c9c2bb;background:rgba(0,0,0,.4);padding:3px 7px;border-radius:5px">{{ captureDist }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#c9c2bb;background:rgba(0,0,0,.4);padding:3px 7px;border-radius:5px">{{ captureAngle }}</span>
+                  </div>
+                  <sc-if value="{{ captureFailed }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;inset:0;background:rgba(28,25,23,.62);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center">
+                      <div style="width:44px;height:44px;border-radius:50%;border:2px solid #e8a09a;display:grid;place-items:center;color:#e8a09a;font-size:22px;font-weight:700">!</div>
+                      <div style="font-size:15px;font-weight:700;color:#fff">Image rejected — retake required</div>
+                      <div style="font-size:12.5px;color:#d6cfc8;max-width:380px;line-height:1.6">Sharpness below threshold and capture angle 19° off perpendicular. Unreliable input is not clinically scored and is not written to the training set.</div>
+                      <button onClick="{{ startCapture }}" style="margin-top:4px;height:38px;padding:0 20px;border-radius:9px;border:none;background:#fffefc;color:#1c1917;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Retake photo</button>
+                    </div>
+                  </sc-if>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+                  <button onClick="{{ startCapture }}" style="{{ shutterStyle }}">{{ shutterLabel }}</button>
+                  <div style="flex:1;font-size:11.5px;color:#8a827b;line-height:1.5">Hold the marker flat in the same plane as the wound. Distance 20–25 cm, camera perpendicular.</div>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px">
+                    <h3 style="margin:0;font-size:13px;font-weight:700">Quality gate</h3>
+                    <span style="{{ gatePill }}">{{ gateLabel }}</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:9px">
+                    <sc-for list="{{ checks }}" as="c" hint-placeholder-count="5">
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <span style="{{ c.dot }}">{{ c.mark }}</span>
+                        <span style="flex:1;font-size:12.5px;color:#3f3a36">{{ c.label }}</span>
+                        <span style="{{ c.valStyle }}">{{ c.value }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="margin-top:13px;padding-top:12px;border-top:1px solid rgba(28,25,23,.08);font-size:11px;color:#8a827b;line-height:1.55">Bad input is rejected before scoring. Rejections are logged with reason code for capture-coaching analytics.</div>
+                </div>
+
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+                    <div style="{{ gradeBadge }}">{{ grade }}</div>
+                    <div style="min-width:0">
+                      <h3 style="margin:0;font-size:13px;font-weight:700">Capture grade</h3>
+                      <div style="font-size:11.5px;color:#78716c;line-height:1.45">{{ gradeNote }}</div>
+                    </div>
+                  </div>
+                  <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">LIMITATIONS RECORDED</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ limitations }}" as="l" hint-placeholder-count="2">
+                      <span style="padding:4px 9px;border-radius:7px;background:#f4f1ed;font-size:11.5px;color:#57514c">{{ l }}</span>
+                    </sc-for>
+                  </div>
+                  <div style="margin-top:13px;padding-top:12px;border-top:1px solid rgba(28,25,23,.08)">
+                    <div style="font-size:11px;color:#8a827b;line-height:1.55;margin-bottom:8px">Scale rule: with no marker coplanar with the wound, centimetre values are withheld entirely — fabricated measurements poison trend data.</div>
+                    <button onClick="{{ toggleScale }}" style="{{ scaleToggleStyle }}">{{ scaleToggleLabel }}</button>
+                  </div>
+                </div>
+
+                <sc-if value="{{ aiOn }}" hint-placeholder-val="{{ true }}">
+                  <div style="background:#0f3d3a;border-radius:13px;padding:17px;color:#e3f1ef">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px">
+                      <span style="width:18px;height:18px;border-radius:6px;background:#38b2a8"></span>
+                      <h3 style="margin:0;font-size:13px;font-weight:700;color:#fff">AI vision assist</h3>
+                      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.14)">PILOT</span>
+                    </div>
+                    <div style="font-size:12px;line-height:1.6;color:#a8cfca;margin-bottom:12px">{{ aiCaptureCopy }}</div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11.5px"><span style="color:#8fc0ba">segmentation</span><span>{{ aiSeg }}</span></div>
+                      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11.5px"><span style="color:#8fc0ba">scale from marker</span><span>{{ aiScale }}</span></div>
+                      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11.5px"><span style="color:#8fc0ba">model</span><span>wseg-0.4.2</span></div>
+                    </div>
+                    <div style="margin-top:13px;padding-top:11px;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:#8fc0ba;line-height:1.55">Non-autonomous. AI output is a suggestion the nurse accepts, edits or rejects; every value stores its model version.</div>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- step 3: measurements -->
+          <sc-if value="{{ step2 }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ gridSide }}">
+              <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:20px">
+                <h2 style="margin:0 0 3px;font-size:15px;font-weight:700">Measurements &amp; wound bed</h2>
+                <p style="margin:0 0 18px;font-size:12.5px;color:#78716c">AI pre-fills from the marker-calibrated image, and withholds centimetres entirely when no scale marker is in frame. Edit any value — your entry is authoritative.</p>
+                <sc-if value="{{ scaleOff }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-bottom:20px;padding:15px 16px;border-radius:11px;border:1px solid rgba(168,106,31,.3);background:repeating-linear-gradient(135deg,#f7f2e9,#f7f2e9 6px,#f1ebdf 6px,#f1ebdf 12px)">
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:#8a5514;font-weight:600">WITHHELD — NO SCALE REFERENCE</div>
+                    <div style="font-size:12.5px;color:#5c5148;line-height:1.6;margin-top:6px;max-width:520px">No marker was coplanar with the wound, so centimetres are not reported — not as estimates, not hedged. Aspect ratio <span style="font-family:'IBM Plex Mono',monospace;font-weight:600">{{ aspectRatio }}</span> is recorded instead. Enter bedside ruler values below, or retake with the marker in frame.</div>
+                    <div style="{{ grid3 }};margin-top:13px">
+                      <div><div style="font-size:11px;font-weight:600;color:#8a5514;margin-bottom:5px">LENGTH (cm) — RULER</div><input value="{{ f.rulerL }}" onChange="{{ onRulerL }}" placeholder="—" style="width:100%;height:38px;border:1px solid rgba(168,106,31,.4);border-radius:9px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;outline:none;background:#fffefc" /></div>
+                      <div><div style="font-size:11px;font-weight:600;color:#8a5514;margin-bottom:5px">WIDTH (cm) — RULER</div><input value="{{ f.rulerW }}" onChange="{{ onRulerW }}" placeholder="—" style="width:100%;height:38px;border:1px solid rgba(168,106,31,.4);border-radius:9px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;outline:none;background:#fffefc" /></div>
+                      <div><div style="font-size:11px;font-weight:600;color:#8a5514;margin-bottom:5px">DEPTH (cm) — PROBE</div><input value="{{ f.rulerD }}" onChange="{{ onRulerD }}" placeholder="—" style="width:100%;height:38px;border:1px solid rgba(168,106,31,.4);border-radius:9px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;outline:none;background:#fffefc" /></div>
+                    </div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a5514;margin-top:9px">values entered here are stored as nurse-measured, not AI-derived</div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ scaleOn }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ grid4 }};margin-bottom:20px">
+                  <div>
+                    <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:5px">LENGTH (cm)</div>
+                    <input value="{{ f.length }}" onChange="{{ onLength }}" style="width:100%;height:40px;border:1px solid rgba(31,111,107,.45);border-radius:9px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;outline:none;background:#f4faf9" />
+                    <div style="font-size:10px;color:#1f6f6b;margin-top:4px;font-weight:600">AI · conf 0.93</div>
+                  </div>
+                  <div>
+                    <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:5px">WIDTH (cm)</div>
+                    <input value="{{ f.width }}" onChange="{{ onWidth }}" style="width:100%;height:40px;border:1px solid rgba(31,111,107,.45);border-radius:9px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;outline:none;background:#f4faf9" />
+                    <div style="font-size:10px;color:#1f6f6b;margin-top:4px;font-weight:600">AI · conf 0.91</div>
+                  </div>
+                  <div>
+                    <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:5px">DEPTH (cm)</div>
+                    <input value="{{ f.depth }}" onChange="{{ onDepth }}" style="width:100%;height:40px;border:1px solid rgba(28,25,23,.14);border-radius:9px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;outline:none" />
+                    <div style="font-size:10px;color:#a86a1f;margin-top:4px;font-weight:600">manual · probe required</div>
+                  </div>
+                  <div>
+                    <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:5px">AREA (cm²)</div>
+                    <div style="height:40px;border:1px solid rgba(28,25,23,.1);border-radius:9px;padding:0 11px;display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;background:#faf8f5">{{ areaCalc }}</div>
+                    <div style="font-size:10px;color:#8a827b;margin-top:4px">calculated L × W</div>
+                  </div>
+                </div>
+                </sc-if>
+
+                <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:9px">WOUND BED — must total 100%</div>
+                <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:8px">
+                  <sc-for list="{{ tissues }}" as="t" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:12px">
+                      <span style="width:9px;height:9px;flex:none;border-radius:3px;background:{{ t.color }}"></span>
+                      <span style="width:96px;flex:none;font-size:12.5px">{{ t.label }}</span>
+                      <input type="range" min="0" max="100" step="10" value="{{ t.value }}" onChange="{{ t.onChange }}" style="flex:1;accent-color:#1f6f6b" />
+                      <span style="width:44px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600">{{ t.value }}%</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="{{ tissueTotalStyle }}">{{ tissueTotalText }}</div>
+
+                <div style="margin-top:20px;padding-top:18px;border-top:1px solid rgba(28,25,23,.08)">
+                  <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">GRANULATION QUALITY</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+                    <sc-for list="{{ tissueQuality }}" as="o" hint-placeholder-count="5">
+                      <button onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">ESCHAR STATE</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+                    <sc-for list="{{ escharStates }}" as="o" hint-placeholder-count="3">
+                      <button onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">EXPOSED STRUCTURES — select all visible</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ exposedOpts }}" as="o" hint-placeholder-count="4">
+                      <button onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:11px;color:#8a827b;line-height:1.55;margin-top:10px">Bed percentages are recorded in 10% steps and describe the wound bed only. Dry, stable heel eschar is protected and offloaded — never debrided.</div>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 12px;font-size:13px;font-weight:700">Accepted capture</h3>
+                  <div style="position:relative;height:150px;border-radius:10px;background:#efe9e3;overflow:hidden;border:1px solid rgba(28,25,23,.08)">
+                    <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:126px;height:98px;border-radius:60% 40% 50% 50% / 50% 58% 42% 50%;background:radial-gradient(55% 55% at 42% 38%,#d08a6c,#a8584c 58%,#7f3c38)"></div>
+                    <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:134px;height:106px;border-radius:60% 40% 50% 50% / 50% 58% 42% 50%;border:2px dashed rgba(31,111,107,.95)"></div>
+                    <div style="position:absolute;right:8px;bottom:8px;width:18px;height:18px;border-radius:3px;background:repeating-conic-gradient(#fff 0 25%,#1c1917 0 50%) 50%/9px 9px;border:1px solid rgba(0,0,0,.3)"></div>
+                  </div>
+                  <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a827b;line-height:1.7">px/mm 8.42 from marker<br />white balance normalized · ΔE 2.1<br />original + derived stored separately</div>
+                </div>
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 10px;font-size:13px;font-weight:700">Previous visit</h3>
+                  <div style="display:flex;flex-direction:column;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4a443f">
+                    <div style="display:flex;justify-content:space-between"><span style="font-family:'DM Sans',sans-serif;color:#78716c">L × W × D</span><span>4.0 × 2.5 × 0.3</span></div>
+                    <div style="display:flex;justify-content:space-between"><span style="font-family:'DM Sans',sans-serif;color:#78716c">Area</span><span>7.6</span></div>
+                    <div style="display:flex;justify-content:space-between"><span style="font-family:'DM Sans',sans-serif;color:#78716c">Bed</span><span>60 / 30 / 10</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- step 4: observations -->
+          <sc-if value="{{ step3 }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ gridSide }}">
+              <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:20px">
+                <h2 style="margin:0 0 3px;font-size:15px;font-weight:700">Structured observations</h2>
+                <p style="margin:0 0 18px;font-size:12.5px;color:#78716c">Controlled terminology so visits stay comparable. Free text is for context only.</p>
+
+                <div style="{{ grid2 }}">
+                  <div>
+                    <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">EXUDATE AMOUNT</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px">
+                      <sc-for list="{{ exudateOpts }}" as="o" hint-placeholder-count="4">
+                        <button onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">EXUDATE TYPE</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px">
+                      <sc-for list="{{ exTypeOpts }}" as="o" hint-placeholder-count="4">
+                        <button onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="margin-top:20px">
+                  <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px">
+                    <span style="font-size:11px;font-weight:600;color:#8a827b">PAIN (0–10)</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600">{{ f.pain }}</span>
+                    <span style="{{ painDeltaStyle }}">{{ painDelta }}</span>
+                  </div>
+                  <input type="range" min="0" max="10" value="{{ f.pain }}" onChange="{{ onPain }}" style="width:100%;accent-color:#1f6f6b" />
+                </div>
+
+                <div style="margin-top:22px">
+                  <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">PERIWOUND &amp; INFECTION SIGNS — select all present</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ signOpts }}" as="o" hint-placeholder-count="8">
+                      <button onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="margin-top:22px">
+                  <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">SKIN TONE — FITZPATRICK</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ toneOpts }}" as="o" hint-placeholder-count="4">
+                      <button onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:11.5px;color:#78716c;line-height:1.6;margin-top:9px;max-width:560px">{{ toneNote }}</div>
+                </div>
+
+                <div style="margin-top:22px">
+                  <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">WOUND EDGES — select all present</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ edgeOpts }}" as="o" hint-placeholder-count="8">
+                      <button onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:11px;color:#8a827b;margin-top:8px">Epibole means epithelialisation has stopped — flag it explicitly rather than folding it into "unattached".</div>
+                </div>
+
+                <div style="margin-top:22px">
+                  <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">PERIWOUND SKIN — 4 CM MARGIN</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ periwoundOpts }}" as="o" hint-placeholder-count="8">
+                      <button onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="margin-top:22px">
+                  <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">MOISTURE BALANCE</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ moistureOpts }}" as="o" hint-placeholder-count="4">
+                      <button onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="margin-top:22px">
+                  <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:8px">TREATMENT THIS VISIT</div>
+                  <div style="{{ grid2 }}">
+                    <div style="height:38px;border:1px solid rgba(28,25,23,.14);border-radius:9px;padding:0 11px;display:flex;align-items:center;justify-content:space-between;font-size:12.5px"><span>Foam + silver dressing</span><span style="color:#a8a09a">▾</span></div>
+                    <div style="height:38px;border:1px solid rgba(28,25,23,.14);border-radius:9px;padding:0 11px;display:flex;align-items:center;justify-content:space-between;font-size:12.5px"><span>Sharp debridement performed</span><span style="color:#a8a09a">▾</span></div>
+                  </div>
+                  <textarea placeholder="Context note (optional)…" style="margin-top:12px;width:100%;min-height:70px;resize:vertical;border:1px solid rgba(28,25,23,.14);border-radius:9px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:12.5px;outline:none"></textarea>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 11px;font-size:13px;font-weight:700">Live rule preview</h3>
+                  <div style="display:flex;flex-direction:column;gap:9px">
+                    <sc-for list="{{ rulePreview }}" as="r" hint-placeholder-count="4">
+                      <div style="display:flex;gap:9px;align-items:flex-start">
+                        <span style="{{ r.dot }}"></span>
+                        <div style="flex:1">
+                          <div style="font-size:12px;font-weight:600;color:#3f3a36">{{ r.label }}</div>
+                          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a827b;line-height:1.5">{{ r.detail }}</div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 11px;font-size:13px;font-weight:700">Infection screen</h3>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:#8a827b;margin-bottom:7px">NERDS</div>
+                  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:13px">
+                    <sc-for list="{{ nerds }}" as="r" hint-placeholder-count="5">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span style="{{ r.dot }}"></span>
+                        <span style="flex:1;font-size:12px;color:#3f3a36">{{ r.label }}</span>
+                        <span style="{{ r.tagStyle }}">{{ r.tag }}</span>
+                        <span style="{{ r.markStyle }}">{{ r.mark }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:#8a827b;margin-bottom:7px">STONEES</div>
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <sc-for list="{{ stonees }}" as="r" hint-placeholder-count="6">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span style="{{ r.dot }}"></span>
+                        <span style="flex:1;font-size:12px;color:#3f3a36">{{ r.label }}</span>
+                        <span style="{{ r.tagStyle }}">{{ r.tag }}</span>
+                        <span style="{{ r.markStyle }}">{{ r.mark }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="margin-top:12px;padding-top:11px;border-top:1px solid rgba(28,25,23,.08);font-size:11px;color:#8a827b;line-height:1.55">{{ infectionNote }}</div>
+                </div>
+
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 11px;font-size:13px;font-weight:700">Not obtainable from a photograph</h3>
+                  <div style="font-size:11.5px;color:#78716c;line-height:1.55;margin-bottom:11px">These are recorded at the bedside or left blank. They are never inferred from the image.</div>
+                  <div style="display:flex;flex-direction:column;gap:5px">
+                    <sc-for list="{{ bedside }}" as="b" hint-placeholder-count="8">
+                      <div style="{{ b.style }}">
+                        <span style="font-size:12px;color:#3f3a36">{{ b.label }}</span>
+                        <span style="{{ b.valStyle }}">{{ b.state }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 11px;font-size:13px;font-weight:700">Offline safety</h3>
+                  <div style="font-size:11.5px;color:#78716c;line-height:1.6">Draft saved locally after every field. If the upload fails the visit is queued — a captured visit is never lost.</div>
+                  <div style="margin-top:10px;display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#3f7a4a"><span style="width:7px;height:7px;border-radius:50%;background:#3f7a4a"></span>draft synced 3 s ago</div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- step 5: triage & submit -->
+          <sc-if value="{{ step4 }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ gridSide }}">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:20px">
+                  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                    <h2 style="margin:0;font-size:15px;font-weight:700">Triage result</h2>
+                    <span style="padding:4px 11px;border-radius:7px;background:#fdf1ef;color:#8f2b25;font-size:11.5px;font-weight:700;border:1px solid rgba(180,54,47,.22)">URGENT — clinician review</span>
+                    <div style="flex:1"></div>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a827b">rules v1.8 · deterministic</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:10px">
+                    <sc-for list="{{ triage }}" as="t" hint-placeholder-count="4">
+                      <div style="display:flex;gap:12px;padding:12px 14px;border-radius:10px;background:{{ t.bg }};border:1px solid {{ t.border }}">
+                        <span style="{{ t.dot }}"></span>
+                        <div style="flex:1">
+                          <div style="font-size:12.5px;font-weight:700;color:#3f3a36;margin-bottom:3px">{{ t.title }}</div>
+                          <div style="font-size:12px;color:#57514c;line-height:1.55">{{ t.body }}</div>
+                          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a827b;margin-top:5px">{{ t.trace }}</div>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <sc-if value="{{ aiOn }}" hint-placeholder-val="{{ true }}">
+                  <div style="background:#0f3d3a;border-radius:13px;padding:20px;color:#e3f1ef">
+                    <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px">
+                      <span style="width:18px;height:18px;border-radius:6px;background:#38b2a8"></span>
+                      <h3 style="margin:0;font-size:14px;font-weight:700;color:#fff">AI longitudinal summary</h3>
+                      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.14)">DRAFT · CLINICIAN REVIEWS</span>
+                    </div>
+                    <sc-if value="{{ areaUp }}" hint-placeholder-val="{{ true }}">
+                      <p style="margin:0 0 14px;font-size:13px;line-height:1.65;color:#cfe6e3">Right plantar forefoot DFU, week 6. Area fell 12.4 → 7.6 cm² through week 5, then rose to {{ areaCalc }} cm² this visit — the first increase in the episode. Slough share up 30% → 45% and pain up 4 → {{ f.pain }}. Purulent drainage and periwound warmth are newly recorded. Pattern is consistent with local infection rather than expected healing plateau.</p>
+                    </sc-if>
+                    <sc-if value="{{ areaDown }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin:0 0 14px;font-size:13px;line-height:1.65;color:#cfe6e3">Right plantar forefoot DFU, week 6. Area continued down, 7.6 → {{ areaCalc }} cm² ({{ areaDeltaText }} this visit), tracking the expected trajectory against the 40–50% four-week benchmark. Pain recorded at {{ f.pain }}. Purulent drainage and periwound warmth are newly recorded — those findings route to review on their own merit, independent of the area trend.</p>
+                    </sc-if>
+                    <sc-if value="{{ areaFlat }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin:0 0 14px;font-size:13px;line-height:1.65;color:#cfe6e3">Right plantar forefoot DFU, week 6. Area static at {{ areaCalc }} cm² since the last visit. A static area can still hide real progress if slough is converting to granulation — read the bed composition alongside it. Pain recorded at {{ f.pain }}. Purulent drainage and periwound warmth are newly recorded.</p>
+                    </sc-if>
+                    <sc-if value="{{ areaUnknown }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin:0 0 14px;font-size:13px;line-height:1.65;color:#cfe6e3">Right plantar forefoot DFU, week 6. Area change is not quantifiable this visit — no scale reference was in frame and no bedside ruler value was entered, so no centimetre figure is reported. Aspect ratio 1.6 : 1 recorded. Slough share up 30% → 45% and pain up 4 → {{ f.pain }}. Purulent drainage and periwound warmth are newly recorded; those findings stand on their own and route to review without a measurement.</p>
+                    </sc-if>
+                    <div style="{{ grid3 }}">
+                      <div style="padding:10px 12px;border-radius:9px;background:rgba(255,255,255,.07)"><div style="font-size:10px;color:#8fc0ba;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Confidence</div><div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600">0.86</div></div>
+                      <div style="padding:10px 12px;border-radius:9px;background:rgba(255,255,255,.07)"><div style="font-size:10px;color:#8fc0ba;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Model</div><div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600">sum-1.2</div></div>
+                      <div style="padding:10px 12px;border-radius:9px;background:rgba(255,255,255,.07)"><div style="font-size:10px;color:#8fc0ba;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Depth conf.</div><div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600">low</div></div>
+                    </div>
+                    <div style="margin-top:13px;padding-top:12px;border-top:1px solid rgba(255,255,255,.12);font-size:11.5px;color:#8fc0ba;line-height:1.6">Depth could not be derived from imagery — AI returned <span style="font-family:'IBM Plex Mono',monospace">unable to assess</span> and routed to the nurse's manual probe value. AI never sets triage severity on its own; the rules engine above owns the decision.</div>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 11px;font-size:13px;font-weight:700">Escalation flags</h3>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <sc-for list="{{ escalation }}" as="f" hint-placeholder-count="2">
+                      <div style="{{ f.wrap }}">
+                        <div style="{{ f.lv }}">{{ f.level }}</div>
+                        <div style="font-size:12.5px;font-weight:600;margin:3px 0 3px">{{ f.finding }}</div>
+                        <div style="font-size:11.5px;color:#57514c;line-height:1.5">{{ f.action }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 11px;font-size:13px;font-weight:700">Proposed classification</h3>
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <span style="font-size:13px;font-weight:700">{{ etiology }}</span>
+                    <span style="{{ etiologyConfStyle }}">{{ etiologyConf }}</span>
+                  </div>
+                  <div style="font-size:11.5px;color:#57514c;line-height:1.6">{{ etiologyRationale }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a827b;margin-top:8px">differential · {{ differential }}</div>
+                  <div style="margin-top:11px;padding:10px 12px;border-radius:9px;background:#faf8f5;font-size:11.5px;color:#57514c;line-height:1.55">{{ stagingNote }}</div>
+                  <div style="margin-top:11px;display:flex;flex-direction:column;gap:5px">
+                    <sc-for list="{{ hardRules }}" as="r" hint-placeholder-count="4">
+                      <div style="display:flex;gap:7px;font-size:11px;color:#78716c;line-height:1.5"><span style="color:#1f6f6b">·</span>{{ r }}</div>
+                    </sc-for>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#1f5652;margin-top:11px;letter-spacing:.06em">→ REQUIRES CLINICIAN CONFIRMATION</div>
+                </div>
+
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 11px;font-size:13px;font-weight:700">PUSH score</h3>
+                  <sc-if value="{{ pushComputable }}" hint-placeholder-val="{{ true }}">
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600">{{ pushScore }}<span style="font-size:12px;color:#8a827b;font-weight:400"> / 17</span></div>
+                  </sc-if>
+                  <sc-if value="{{ pushBlocked }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:12px;color:#78716c;line-height:1.55">Not computable. Missing: <span style="font-family:'IBM Plex Mono',monospace">{{ pushMissing }}</span></div>
+                  </sc-if>
+                </div>
+
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 11px;font-size:13px;font-weight:700">Improve the next capture</h3>
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <sc-for list="{{ nextCapture }}" as="n" hint-placeholder-count="3">
+                      <div style="display:flex;gap:7px;font-size:12px;color:#57514c;line-height:1.5"><span style="color:#1f6f6b">·</span>{{ n }}</div>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 11px;font-size:13px;font-weight:700">Routing</h3>
+                  <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px">
+                    <div style="display:flex;justify-content:space-between"><span style="color:#78716c">Queue</span><span style="font-weight:600">Urgent review</span></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:#78716c">Owner</span><span style="font-weight:600">Dr. R. Nasser</span></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:#78716c">SLA</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:600">2 h</span></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:#78716c">Escalates to</span><span style="font-weight:600">On-call lead</span></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:#78716c">Channels</span><span style="font-weight:600">In-app + SMS</span></div>
+                  </div>
+                  <div style="margin-top:12px;padding:10px 12px;border-radius:9px;background:#faf8f5;font-size:11px;color:#78716c;line-height:1.55">SMS body carries no clinical detail — patient reference and a deep link only.</div>
+                </div>
+                <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px">
+                  <h3 style="margin:0 0 10px;font-size:13px;font-weight:700">Audit stamp</h3>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#57514c;line-height:1.8">visit v6 · wound W-1<br />captured_by nurse.hala<br />form v3.2 · rules v1.8<br />wseg-0.4.2 · sum-1.2<br />2 images · 1 rejected (blur, angle)</div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="display:flex;align-items:center;gap:12px;margin-top:20px">
+            <button onClick="{{ prevStep }}" style="{{ backStyle }}">Back</button>
+            <div style="flex:1;font-size:11.5px;color:#8a827b">{{ footHint }}</div>
+            <button onClick="{{ nextStep }}" style="{{ nextStyle }}">{{ nextLabel }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ ALERTS ============ -->
+      <sc-if value="{{ isAlerts }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ pad }};max-width:1080px;animation:wtin .22s ease both">
+          <h1 style="margin:0 0 5px;font-size:25px;font-weight:700;letter-spacing:-.5px">Alerts</h1>
+          <p style="margin:0 0 20px;font-size:13px;color:#78716c">Every alert records rule version, trigger values, who was notified and how it closed. Nothing disappears silently.</p>
+          <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;overflow:hidden">
+            <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="4">
+              <div style="{{ alertRow }};padding:15px 18px;border-bottom:1px solid rgba(28,25,23,.06)">
+                <span style="{{ a.pill }}">{{ a.sev }}</span>
+                <div>
+                  <div style="font-size:13px;font-weight:600;margin-bottom:3px">{{ a.title }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a827b">{{ a.trace }}</div>
+                </div>
+                <div style="font-size:11.5px;color:#57514c;line-height:1.5">{{ a.notified }}</div>
+                <div style="{{ cellEnd }};font-size:11.5px;color:#57514c">{{ a.state }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ ADMIN: TEAM ============ -->
+      <sc-if value="{{ isTeam }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ pad }};max-width:1140px;animation:wtin .22s ease both">
+          <div style="{{ pageHead }}">
+            <div>
+              <h1 style="margin:0 0 5px;font-size:25px;font-weight:700;letter-spacing:-.5px">Team</h1>
+              <p style="margin:0;font-size:13px;color:#78716c">{{ clinicName }} · tenant <span style="font-family:'IBM Plex Mono',monospace">org_8f21c</span> · staff see only this clinic's patients</p>
+            </div>
+            <div style="flex:1"></div>
+            <button onClick="{{ openInvite }}" style="height:36px;padding:0 16px;border-radius:9px;border:none;background:#1f6f6b;color:#fff;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 1px 2px rgba(31,111,107,.4)">Invite staff</button>
+          </div>
+
+          <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;overflow:hidden;margin-bottom:16px">
+            <div style="{{ tblHead }};padding:10px 18px;background:#faf8f5;border-bottom:1px solid rgba(28,25,23,.08);font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#8a827b">
+              <div>Member</div><div>Role</div><div>Scope</div><div>Last active</div><div>MFA</div>
+            </div>
+            <sc-for list="{{ staff }}" as="s" hint-placeholder-count="5">
+              <div style="{{ tblRow }};padding:13px 18px;border-bottom:1px solid rgba(28,25,23,.06)">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                  <div style="width:30px;height:30px;flex:none;border-radius:50%;background:#f2efeb;display:grid;place-items:center;font-size:11px;font-weight:700;color:#57514c">{{ s.initials }}</div>
+                  <div style="min-width:0"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</div><div style="font-size:10.5px;color:#8a827b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.email }}</div></div>
+                </div>
+                <div><span style="{{ s.rolePill }}">{{ s.role }}</span></div>
+                <div style="font-size:12px;color:#57514c">{{ s.scope }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#57514c">{{ s.active }}</div>
+                <div style="font-size:11.5px;font-weight:600;color:{{ s.mfaColor }}">{{ s.mfa }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:17px 18px">
+            <h2 style="margin:0 0 12px;font-size:14px;font-weight:700">Pending invitations</h2>
+            <sc-for list="{{ invites }}" as="i" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid rgba(28,25,23,.06)">
+                <span style="flex:1;font-size:12.5px">{{ i.email }}</span>
+                <span style="{{ i.rolePill }}">{{ i.role }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a827b">expires {{ i.expires }}</span>
+                <button style="height:28px;padding:0 11px;border-radius:7px;border:1px solid rgba(28,25,23,.12);background:#fffefc;font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer">Resend</button>
+                <button style="height:28px;padding:0 11px;border-radius:7px;border:1px solid rgba(28,25,23,.12);background:#fffefc;font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:600;color:#b4362f;cursor:pointer">Revoke</button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ ADMIN: FLAGS ============ -->
+      <sc-if value="{{ isFlags }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ pad }};max-width:900px;animation:wtin .22s ease both">
+          <h1 style="margin:0 0 5px;font-size:25px;font-weight:700;letter-spacing:-.5px">AI &amp; protocol controls</h1>
+          <p style="margin:0 0 20px;font-size:13px;color:#78716c">Regulated clinical-analysis modules stay separable from administrative functions. Changes here are versioned and audited.</p>
+
+          <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;overflow:hidden;margin-bottom:16px">
+            <sc-for list="{{ flags }}" as="fl" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:16px;padding:16px 18px;border-bottom:1px solid rgba(28,25,23,.06)">
+                <div style="flex:1">
+                  <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
+                    <span style="font-size:13.5px;font-weight:600">{{ fl.name }}</span>
+                    <span style="{{ fl.stagePill }}">{{ fl.stage }}</span>
+                  </div>
+                  <div style="font-size:12px;color:#78716c;line-height:1.55">{{ fl.desc }}</div>
+                </div>
+                <button onClick="{{ fl.toggle }}" style="{{ fl.switch }}"><span style="{{ fl.knob }}"></span></button>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:18px">
+            <h2 style="margin:0 0 4px;font-size:14px;font-weight:700">Triage thresholds</h2>
+            <p style="margin:0 0 16px;font-size:12px;color:#78716c">Clinician-owned. Each edit creates a new rules version; past decisions keep the version that produced them.</p>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <sc-for list="{{ thresholds }}" as="th" hint-placeholder-count="3">
+                <div style="{{ thRow }}">
+                  <span style="{{ thLabel }}">{{ th.label }}</span>
+                  <input type="range" min="{{ th.min }}" max="{{ th.max }}" value="{{ th.value }}" onChange="{{ th.onChange }}" style="flex:1;accent-color:#1f6f6b" />
+                  <span style="width:74px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600">{{ th.display }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:16px;display:flex;align-items:center;gap:12px;padding-top:14px;border-top:1px solid rgba(28,25,23,.08)">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a827b">current: rules v1.8 · pending draft v1.9</span>
+              <div style="flex:1"></div>
+              <button style="height:34px;padding:0 15px;border-radius:9px;border:none;background:#1f6f6b;color:#fff;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer">Send v1.9 for clinical sign-off</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ ADMIN: AUDIT ============ -->
+      <sc-if value="{{ isAudit }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ pad }};max-width:1140px;animation:wtin .22s ease both">
+          <h1 style="margin:0 0 5px;font-size:25px;font-weight:700;letter-spacing:-.5px">Access audit</h1>
+          <p style="margin:0 0 20px;font-size:13px;color:#78716c">Who viewed or changed a patient record, retained per PDPL policy. Immutable append-only events.</p>
+          <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;overflow:hidden">
+            <div style="{{ tblHead }};padding:10px 18px;background:#faf8f5;border-bottom:1px solid rgba(28,25,23,.08);font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#8a827b">
+              <div>Time</div><div>Actor</div><div>Action</div><div>Target</div><div>Result</div>
+            </div>
+            <sc-for list="{{ audit }}" as="a" hint-placeholder-count="7">
+              <div style="{{ tblRow }};padding:11px 18px;border-bottom:1px solid rgba(28,25,23,.06);font-size:12px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#57514c">{{ a.time }}</div>
+                <div>{{ a.actor }}</div>
+                <div style="color:#3f3a36">{{ a.action }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#57514c">{{ a.target }}</div>
+                <div><span style="{{ a.pill }}">{{ a.result }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ DESIGN NOTES ============ -->
+      <sc-if value="{{ isNotes }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ pad }};max-width:760px;animation:wtin .22s ease both">
+          <h1 style="margin:0 0 6px;font-size:25px;font-weight:700;letter-spacing:-.5px">Design notes &amp; assumptions</h1>
+          <p style="margin:0 0 22px;font-size:13px;color:#78716c">What I decided and what I need from you. Written for the clinical review, not for engineering.</p>
+
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:18px">
+              <h2 style="margin:0 0 10px;font-size:14px;font-weight:700">Scope shown</h2>
+              <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.75;color:#4a443f">
+                <li>Nurse: patient roster with triage, patient/wound record, and the guided check-in — the hero flow.</li>
+                <li>Clinic Admin: team &amp; tenancy, AI/protocol controls, access audit.</li>
+                <li>Clinician review queue, patient home capture and export templates are deliberately out of this pass.</li>
+              </ul>
+            </div>
+            <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:18px">
+              <h2 style="margin:0 0 10px;font-size:14px;font-weight:700">Assumptions I made</h2>
+              <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.75;color:#4a443f">
+                <li>Wound is a first-class record: a patient can carry several, each with its own site, episode and history.</li>
+                <li>Nurse entry is authoritative; AI output is always a suggestion carrying a confidence and a model version.</li>
+                <li>The capture quality gate can <em>reject</em> — a bad image is neither scored nor written to the training set.</li>
+                <li>Triage severity is set by the deterministic rules engine, never by the model.</li>
+                <li>Depth stays manual: it can't be derived from a single photograph.</li>
+              </ul>
+            </div>
+            <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:18px">
+              <h2 style="margin:0 0 10px;font-size:14px;font-weight:700">Decisions I need from the clinical lead</h2>
+              <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.75;color:#4a443f">
+                <li>The final field set and terminology — my chips are placeholders for your controlled vocabulary.</li>
+                <li>Threshold values behind each rule, and who owns each severity's SLA and escalation.</li>
+                <li>Whether PUSH is the scoring instrument or something else.</li>
+                <li>Marker specification and the clinic's distribution/replacement process.</li>
+              </ul>
+            </div>
+            <div style="background:#fffefc;border:1px solid rgba(28,25,23,.09);border-radius:13px;padding:18px">
+              <h2 style="margin:0 0 10px;font-size:14px;font-weight:700">Next steps</h2>
+              <ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.75;color:#4a443f">
+                <li>Clinician urgent-review queue and side-by-side review surface.</li>
+                <li>Nurse phone layout for the capture step — desktop was the request, but capture happens on a phone.</li>
+                <li>Arabic mirror of the check-in and consent copy.</li>
+                <li>Five-nurse usability pass on the capture step: can they get a passing image in under two minutes?</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ NEW PATIENT / EXPORT stubs ============ -->
+      <sc-if value="{{ isStub }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ pad }};max-width:760px">
+          <h1 style="margin:0 0 8px;font-size:23px;font-weight:700">{{ stubTitle }}</h1>
+          <p style="margin:0 0 18px;font-size:13px;color:#78716c;line-height:1.6">{{ stubBody }}</p>
+          <button onClick="{{ goRoster }}" style="height:36px;padding:0 15px;border-radius:9px;border:1px solid rgba(28,25,23,.12);background:#fffefc;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer">Back to patients</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+        <div style="position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:13px 18px;border-radius:11px;background:#1c1917;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.24);animation:wtin .2s ease both;z-index:50">
+          <span style="width:8px;height:8px;border-radius:50%;background:#38b2a8"></span>
+          <span style="font-size:12.5px;font-weight:500">{{ toast }}</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ inviteOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:fixed;inset:0;background:rgba(28,25,23,.42);display:grid;place-items:center;z-index:61;padding:16px">
+          <div style="width:430px;max-width:100%;background:#fffefc;border-radius:15px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.28);animation:wtin .18s ease both">
+            <h2 style="margin:0 0 4px;font-size:16px;font-weight:700">Invite staff</h2>
+            <p style="margin:0 0 18px;font-size:12.5px;color:#78716c">Magic-link invitation, scoped to this clinic only. Expires in 72 hours.</p>
+            <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:5px">EMAIL</div>
+            <input placeholder="name@clinic.sa" style="width:100%;height:38px;border:1px solid rgba(28,25,23,.14);border-radius:9px;padding:0 11px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;margin-bottom:14px" />
+            <div style="font-size:11px;font-weight:600;color:#8a827b;margin-bottom:7px">ROLE</div>
+            <div style="display:flex;gap:6px;margin-bottom:18px">
+              <sc-for list="{{ inviteRoles }}" as="r" hint-placeholder-count="3">
+                <button onClick="{{ r.pick }}" style="{{ r.style }}">{{ r.label }}</button>
+              </sc-for>
+            </div>
+            <div style="padding:11px 13px;border-radius:9px;background:#faf8f5;font-size:11.5px;color:#78716c;line-height:1.55;margin-bottom:18px">Clinicians and admins require MFA at first sign-in.</div>
+            <div style="display:flex;gap:9px;justify-content:flex-end">
+              <button onClick="{{ closeInvite }}" style="height:36px;padding:0 15px;border-radius:9px;border:1px solid rgba(28,25,23,.12);background:#fffefc;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer">Cancel</button>
+              <button onClick="{{ sendInvite }}" style="height:36px;padding:0 16px;border-radius:9px;border:none;background:#1f6f6b;color:#fff;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer">Send invitation</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;clinicName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Al Nakheel Wound Clinic&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;aiPilot&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Feature flags&quot;}}">
+const ACC = '#1f6f6b';
+const PILL = {
+  Urgent: 'padding:3px 10px;border-radius:7px;font-size:11px;font-weight:700;background:#fdf1ef;color:#8f2b25;border:1px solid rgba(180,54,47,.2);white-space:nowrap',
+  'Needs review': 'padding:3px 10px;border-radius:7px;font-size:11px;font-weight:700;background:#fdf6ea;color:#8a5514;border:1px solid rgba(168,106,31,.22);white-space:nowrap',
+  Stalled: 'padding:3px 10px;border-radius:7px;font-size:11px;font-weight:700;background:#f4f1ed;color:#57514c;border:1px solid rgba(28,25,23,.12);white-space:nowrap',
+  Improving: 'padding:3px 10px;border-radius:7px;font-size:11px;font-weight:700;background:#eef6ef;color:#2f6338;border:1px solid rgba(63,122,74,.22);white-space:nowrap',
+  Healed: 'padding:3px 10px;border-radius:7px;font-size:11px;font-weight:700;background:#eef5f4;color:#1f5652;border:1px solid rgba(31,111,107,.2);white-space:nowrap'
+};
+const blobCss = (w, h, tone) =>
+  'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:' + w + 'px;height:' + h +
+  'px;border-radius:60% 40% 50% 50% / 50% 58% 42% 50%;background:radial-gradient(55% 55% at 42% 38%,' + tone + ')';
+
+const PATIENTS = [
+  { id: 'p1', name: 'Amal Al-Harbi', mrn: '4471-A', demo: '62 F · DOB 1964-03-08', meta: 'MRN 4471-A · W-1',
+    woundType: 'Diabetic foot ulcer', site: 'R plantar forefoot', woundId: 'W-1', status: 'Needs review',
+    area: '7.6 cm²', trend: 'worsening', last: '7 days ago', lastBy: 'nurse.hala', clinician: 'Dr. R. Nasser',
+    consent: '2026-05-14', push: '11', visitCount: '5', gran: 60, slough: 30, eschar: 10,
+    risks: ['Type 2 diabetes · HbA1c 9.1', 'Peripheral neuropathy', 'Smoker', 'Reduced mobility'],
+    baselineDate: '2026-05-14', baselineDims: '5.2 × 2.4 × 0.5', baselineArea: '12.4',
+    currentDate: '2026-08-03', currentDims: '4.0 × 2.5 × 0.3', currentArea: '7.6',
+    trendWindow: '5 visits · 12 weeks', areaDelta: '−39%', trendDir: 'good',
+    alertOpen: false, alertTitle: '', alertBody: '', alertRule: '', alertTime: '',
+    visits: [
+      { date: '2026-05-14', short: 'w0', area: '12.4', delta: 'baseline' },
+      { date: '2026-06-05', short: 'w3', area: '9.8', delta: '−21%' },
+      { date: '2026-06-26', short: 'w6', area: '8.1', delta: '−17%' },
+      { date: '2026-07-20', short: 'w9', area: '7.6', delta: '−6%' },
+      { date: '2026-08-03', short: 'w11', area: '7.6', delta: '0%' }
+    ],
+    notes: [
+      { author: 'Dr. R. Nasser', time: '2026-07-20 14:02', body: 'Healing has flattened over the last two visits. Continue silver foam, reinforce off-loading compliance, and send a close image of the medial edge next week.', tag: 'Continue current plan' },
+      { author: 'nurse.hala', time: '2026-08-03 09:41', body: 'Patient reports the boot is uncomfortable at work and is not always worn. Slough increased since last dressing change.', tag: 'Adherence concern' }
+    ] },
+  { id: 'p2', name: 'Faisal Al-Otaibi', mrn: '3902-B', demo: '58 M', meta: 'MRN 3902-B · W-2',
+    woundType: 'Pressure injury, stage 3', site: 'Sacrum', woundId: 'W-2', status: 'Stalled',
+    area: '14.2 cm²', trend: 'no change', last: '3 days ago', lastBy: 'nurse.omar' },
+  { id: 'p3', name: 'Noura Al-Qahtani', mrn: '5518-C', demo: '71 F', meta: 'MRN 5518-C · W-1',
+    woundType: 'Venous leg ulcer', site: 'L medial malleolus', woundId: 'W-1', status: 'Improving',
+    area: '4.1 cm²', trend: '−24%', last: '2 days ago', lastBy: 'nurse.hala' },
+  { id: 'p4', name: 'Khalid Al-Dossari', mrn: '2214-D', demo: '49 M', meta: 'MRN 2214-D · W-3',
+    woundType: 'Surgical dehiscence', site: 'Abdominal midline', woundId: 'W-3', status: 'Urgent',
+    area: '21.7 cm²', trend: '+18%', last: '18 hours ago', lastBy: 'nurse.omar' },
+  { id: 'p5', name: 'Turki Al-Zahrani', mrn: '6087-E', demo: '74 M', meta: 'MRN 6087-E · W-1',
+    woundType: 'Pressure injury, stage 2', site: 'R heel', woundId: 'W-1', status: 'Needs review',
+    area: '6.3 cm²', trend: '+7%', last: '5 days ago', lastBy: 'nurse.hala' },
+  { id: 'p6', name: 'Sara Mansour', mrn: '1740-F', demo: '66 F', meta: 'MRN 1740-F · W-2',
+    woundType: 'Diabetic foot ulcer', site: 'L 1st MTP', woundId: 'W-2', status: 'Healed',
+    area: '0.0 cm²', trend: 'closed', last: '9 days ago', lastBy: 'nurse.omar' }
+];
+
+const CHECKS = [
+  { label: 'Distance 20–25 cm', ok: '22.4 cm', bad: '22.1 cm' },
+  { label: 'Perpendicularity ±10°', ok: '3°', bad: '19°' },
+  { label: 'Calibration marker visible', ok: 'detected', bad: 'detected' },
+  { label: 'Sharpness / focus', ok: '0.94', bad: '0.41' },
+  { label: 'Exposure & white balance', ok: 'ΔE 2.1', bad: 'ΔE 2.4' }
+];
+
+class Component extends DCLogic {
+  state = {
+    role: 'nurse', screen: 'roster', pid: 'p1', filter: 'All', query: '',
+    step: 0, capture: 'idle', attempts: 0, checkStates: [],
+    f: { length: '', width: '', depth: '', pain: 4, gran: 60, slough: 30, eschar: 10, exudate: 'Moderate', exType: 'Serosanguinous', signs: [], epi: 0, rulerL: '', rulerW: '', rulerD: '' },
+    patients: PATIENTS, toast: '', inviteOpen: false, inviteRole: 'Nurse',
+    flags: { vision: true, summary: true, risk: false, patient: false },
+    thresholds: { area: 10, pain: 2, stall: 21 },
+    narrow: false, drawer: false,
+    scaleFound: true, tone: 'III–IV',
+    a: {
+      granQuality: 'healthy', escharState: 'n/a', exposed: [],
+      edges: ['attached'], periwound: ['callus'], moisture: 'moist',
+      epi: 10, bedside: []
+    }
+  };
+
+  measure = () => {
+    const el = document.querySelector('[data-wt-shell]');
+    const w = el ? el.getBoundingClientRect().width : window.innerWidth;
+    const n = w > 0 && w < 900;
+    if (n !== this.state.narrow) this.setState({ narrow: n, drawer: false });
+  };
+
+  componentDidMount() {
+    this.measure();
+    const el = document.querySelector('[data-wt-shell]');
+    if (typeof ResizeObserver !== 'undefined' && el) {
+      this._ro = new ResizeObserver(() => this.measure());
+      this._ro.observe(el);
+    }
+    window.addEventListener('resize', this.measure);
+  }
+
+  componentWillUnmount() { clearTimeout(this._t); if (this._ro) this._ro.disconnect(); window.removeEventListener('resize', this.measure); }
+
+  go = (screen) => () => this.setState({ screen, drawer: false });
+  setRole = (role) => () => this.setState({ role, screen: role === 'nurse' ? 'roster' : 'team', drawer: false });
+  flash = (msg) => { this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2600); };
+
+  openPatient = (id) => () => this.setState({ pid: id, screen: 'patient', drawer: false });
+
+  beginCheckin = () => this.setState({
+    screen: 'checkin', step: 0, capture: 'idle', attempts: 0, checkStates: [],
+    f: { length: '', width: '', depth: '', pain: 4, gran: 60, slough: 30, eschar: 10, exudate: 'Moderate', exType: 'Serosanguinous', signs: [], epi: 0, rulerL: '', rulerW: '', rulerD: '' }
+  });
+
+  startCapture = () => {
+    const failing = this.state.attempts === 0;
+    this.setState({ capture: 'scanning', checkStates: CHECKS.map(() => 'pending') });
+    CHECKS.forEach((c, i) => {
+      setTimeout(() => {
+        const bad = failing && (i === 1 || i === 3);
+        this.setState(s => {
+          const cs = s.checkStates.slice();
+          cs[i] = bad ? 'fail' : 'ok';
+          return { checkStates: cs };
+        });
+      }, 320 + i * 300);
+    });
+    setTimeout(() => {
+      if (failing) this.setState(s => ({ capture: 'failed', attempts: s.attempts + 1 }));
+      else this.setState(s => ({
+        capture: 'passed', attempts: s.attempts + 1,
+        f: Object.assign({}, s.f, { length: '4.4', width: '2.6', depth: '0.5', pain: 7, gran: 40, slough: 45, eschar: 15, exudate: 'Heavy', exType: 'Purulent', signs: ['Warmth', 'Redness > 2 cm', 'Purulence', 'Odor'] })
+      }));
+    }, 320 + CHECKS.length * 300 + 400);
+  };
+
+  nextStep = () => {
+    const s = this.state;
+    if (s.step === 1 && s.capture !== 'passed') { this.flash('Capture a photo that passes the quality gate first'); return; }
+    if (s.step === 4) { this.submit(); return; }
+    this.setState({ step: s.step + 1 });
+  };
+  prevStep = () => this.setState(s => ({ step: Math.max(0, s.step - 1) }));
+
+  submit = () => {
+    const area = this.area();
+    this.setState(s => {
+      const patients = s.patients.map(p => {
+        if (p.id !== s.pid) return p;
+        const visits = p.visits.concat([{ date: '2026-08-10', short: 'w12', area: area, delta: '+' + Math.round((area / 7.6 - 1) * 100) + '%' }]);
+        return Object.assign({}, p, {
+          status: 'Urgent', area: area + ' cm²', trend: '+' + Math.round((area / 7.6 - 1) * 100) + '%',
+          last: 'just now', lastBy: 'nurse.hala', visits, visitCount: String(visits.length),
+          currentDate: '2026-08-10', currentDims: s.f.length + ' × ' + s.f.width + ' × ' + s.f.depth, currentArea: area,
+          gran: s.f.gran, slough: s.f.slough, eschar: s.f.eschar, push: '14', areaDelta: '+' + Math.round((area / 7.6 - 1) * 100) + '%', trendDir: 'bad',
+          alertOpen: true,
+          alertTitle: 'Urgent — clinical red flag + trend deterioration',
+          alertBody: 'Purulent drainage with periwound warmth recorded, and wound area increased for the first time in this episode. Routed to Dr. R. Nasser with a 2-hour response SLA.',
+          alertRule: 'RF-03 + TD-01 · v1.8', alertTime: 'just now'
+        });
+      });
+      return { patients, screen: 'patient', step: 0, capture: 'idle', attempts: 0 };
+    });
+    this.flash('Visit 6 submitted · escalated to urgent review queue');
+  };
+
+  ackAlert = () => {
+    this.setState(s => ({ patients: s.patients.map(p => p.id === s.pid ? Object.assign({}, p, { alertOpen: false }) : p) }));
+    this.flash('Alert acknowledged · disposition recorded in audit log');
+  };
+
+  trendCard = (s) => {
+    const a = this.area(), src = s.scaleFound ? '' : ' · nurse-measured';
+    const grey = { bg: '#f7f5f2', border: 'rgba(28,25,23,.09)', dot: 'width:8px;height:8px;flex:none;margin-top:5px;border-radius:50%;background:#8a827b' };
+    if (a === '—') return Object.assign({
+      title: 'Trend — area change not quantifiable',
+      body: 'No scale reference in this capture and no bedside ruler value entered, so area is not reported and no trend rule is evaluated. Aspect ratio 1.6 : 1 is recorded instead.',
+      trace: 'TD-01 · not evaluated · missing surface area'
+    }, grey);
+    const pct = Math.round((a / 7.6 - 1) * 100);
+    if (pct > 0) return {
+      title: 'Trend deterioration — area increase',
+      body: 'Area rose from 7.6 to ' + a + ' cm², the first increase in this episode, against a −' + s.thresholds.area + '% expected-improvement threshold.',
+      trace: 'TD-01 · Δarea +' + pct + '% > 0% · severity needs-review' + src,
+      bg: '#fdf6ea', border: 'rgba(168,106,31,.22)',
+      dot: 'width:8px;height:8px;flex:none;margin-top:5px;border-radius:50%;background:#a86a1f'
+    };
+    if (pct === 0) return Object.assign({
+      title: 'Trend — area static',
+      body: 'Area unchanged at ' + a + ' cm². Watch the tissue mix: a static area with slough converting to granulation is still progress the area figure hides.',
+      trace: 'TD-01 · Δarea 0% · rule clear' + src
+    }, grey);
+    return {
+      title: 'Trend — area reducing',
+      body: 'Area fell from 7.6 to ' + a + ' cm² (−' + Math.abs(pct) + '%), within the expected trajectory. The 4-week benchmark is a 40–50% reduction.',
+      trace: 'TD-01 · Δarea −' + Math.abs(pct) + '% · rule clear' + src,
+      bg: '#eef6ef', border: 'rgba(63,122,74,.22)',
+      dot: 'width:8px;height:8px;flex:none;margin-top:5px;border-radius:50%;background:#3f7a4a'
+    };
+  };
+
+  area = () => {
+    const f = this.state.f, sc = this.state.scaleFound;
+    const l = parseFloat(sc ? f.length : f.rulerL), w = parseFloat(sc ? f.width : f.rulerW);
+    if (!l || !w) return '—';
+    return (l * w * 0.785).toFixed(1);
+  };
+
+  setF = (k) => (e) => { const v = e.target.value; this.setState(s => ({ f: Object.assign({}, s.f, { [k]: v }) })); };
+  setNum = (k) => (e) => { const v = Number(e.target.value); this.setState(s => ({ f: Object.assign({}, s.f, { [k]: v }) })); };
+  pickF = (k, v) => () => this.setState(s => ({ f: Object.assign({}, s.f, { [k]: v }) }));
+  toggleSign = (v) => () => this.setState(s => {
+    const has = s.f.signs.indexOf(v) >= 0;
+    return { f: Object.assign({}, s.f, { signs: has ? s.f.signs.filter(x => x !== v) : s.f.signs.concat([v]) }) };
+  });
+  setTh = (k) => (e) => { const v = Number(e.target.value); this.setState(s => ({ thresholds: Object.assign({}, s.thresholds, { [k]: v }) })); };
+  toggleFlag = (k) => () => this.setState(s => ({ flags: Object.assign({}, s.flags, { [k]: !s.flags[k] }) }));
+
+  setA = (k, v) => () => this.setState(s => ({ a: Object.assign({}, s.a, { [k]: v }) }));
+  toggleA = (k, v) => () => this.setState(s => {
+    const list = s.a[k], has = list.indexOf(v) >= 0;
+    return { a: Object.assign({}, s.a, { [k]: has ? list.filter(x => x !== v) : list.concat([v]) }) };
+  });
+  toggleScale = () => this.setState(s => ({ scaleFound: !s.scaleFound }));
+  setTone = (v) => () => this.setState({ tone: v });
+
+  chip = (active) => 'padding:7px 12px;border-radius:8px;border:1px solid ' + (active ? 'rgba(31,111,107,.5)' : 'rgba(28,25,23,.13)') +
+    ';background:' + (active ? '#e9f3f2' : '#fffefc') + ';color:' + (active ? '#175a56' : '#4a443f') +
+    ";font-family:'DM Sans',sans-serif;font-size:12px;font-weight:" + (active ? '600' : '500') + ';cursor:pointer';
+
+  renderVals() {
+    const s = this.state, aiOn = this.props.aiPilot !== false;
+    const pt = s.patients.find(p => p.id === s.pid) || s.patients[0];
+    const clinicName = this.props.clinicName || 'Al Nakheel Wound Clinic';
+
+    const navDef = s.role === 'nurse'
+      ? [{ k: 'roster', label: 'Patients', badge: '14' }, { k: 'checkin', label: 'Check-ins', badge: '7' },
+         { k: 'alerts', label: 'Alerts', badge: '3' }, { k: 'notes', label: 'Design notes', badge: '' }]
+      : [{ k: 'team', label: 'Team', badge: '9' }, { k: 'flags', label: 'AI & protocol', badge: '' },
+         { k: 'audit', label: 'Access audit', badge: '' }, { k: 'notes', label: 'Design notes', badge: '' }];
+
+    const nav = navDef.map(n => {
+      const on = s.screen === n.k || (n.k === 'roster' && s.screen === 'patient');
+      return {
+        label: n.label, badge: n.badge,
+        go: n.k === 'checkin' ? this.beginCheckin : this.go(n.k),
+        style: 'display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;border:none;border-radius:8px;cursor:pointer;' +
+          "font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:" + (on ? '600' : '500') +
+          ';background:' + (on ? '#e9f3f2' : 'transparent') + ';color:' + (on ? '#175a56' : '#57514c'),
+        dot: 'width:6px;height:6px;flex:none;border-radius:50%;background:' + (on ? ACC : 'rgba(28,25,23,.2)'),
+        badgeStyle: n.badge ? "font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8a827b" : 'display:none'
+      };
+    });
+
+    const tabBase = "flex:1;height:28px;border:none;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;";
+    const filters = ['All', 'Urgent', 'Needs review', 'Improving'].map(label => ({
+      label, go: () => this.setState({ filter: label }),
+      style: 'height:31px;padding:0 13px;border-radius:8px;cursor:pointer;' +
+        "font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;border:1px solid " +
+        (s.filter === label ? 'rgba(31,111,107,.45)' : 'rgba(28,25,23,.11)') +
+        ';background:' + (s.filter === label ? '#e9f3f2' : '#fffefc') + ';color:' + (s.filter === label ? '#175a56' : '#57514c')
+    }));
+
+    const q = s.query.trim().toLowerCase();
+    const rows = s.patients
+      .filter(p => s.filter === 'All' || p.status === s.filter)
+      .filter(p => !q || (p.name + ' ' + p.mrn + ' ' + p.woundType).toLowerCase().indexOf(q) >= 0)
+      .map((p, i) => ({
+        name: p.name, meta: p.meta, woundType: p.woundType, site: p.site, area: p.area, trend: p.trend,
+        last: p.last, lastBy: p.lastBy, status: p.status, open: this.openPatient(p.id),
+        pill: PILL[p.status], blob: blobCss(20 + (i % 3) * 5, 15 + (i % 3) * 4, '#d08a6c,#a8584c 58%,#7f3c38'),
+        trendArrow: 'width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;' +
+          (p.status === 'Improving' || p.status === 'Healed'
+            ? 'border-bottom:6px solid #3f7a4a'
+            : p.status === 'Stalled' ? 'border-bottom:6px solid #a8a09a;transform:rotate(90deg)' : 'border-top:6px solid #b4362f'),
+        trendText: 'font-family:\'IBM Plex Mono\',monospace;font-size:11.5px;color:' +
+          (p.status === 'Improving' || p.status === 'Healed' ? '#2f6338' : p.status === 'Stalled' ? '#78716c' : '#8f2b25')
+      }));
+
+    const maxArea = Math.max.apply(null, (pt.visits || [{ area: '1' }]).map(v => parseFloat(v.area) || 0.1));
+    const visits = (pt.visits || []).map((v, i) => ({
+      date: v.date, short: v.short, area: v.area, delta: v.delta,
+      pick: () => {},
+      frameStyle: 'flex:none;width:118px;border-radius:11px;overflow:hidden;border:1px solid ' +
+        (i === pt.visits.length - 1 ? 'rgba(31,111,107,.55)' : 'rgba(28,25,23,.09)') + ';background:#fffefc;cursor:pointer',
+      blob: blobCss(38 + i * 3, 30 + i * 2, '#d08a6c,#a8584c 58%,#7f3c38'),
+      deltaStyle: "font-family:'IBM Plex Mono',monospace;font-size:10px;color:" +
+        (v.delta.charAt(0) === '+' ? '#8f2b25' : v.delta.charAt(0) === '−' ? '#2f6338' : '#8a827b'),
+      barStyle: 'width:100%;max-width:34px;border-radius:5px 5px 2px 2px;background:' +
+        (v.delta.charAt(0) === '+' ? '#c9705e' : ACC) + ';height:' + Math.max(6, (parseFloat(v.area) / maxArea) * 74) + 'px'
+    }));
+
+    const woundTabs = [
+      { id: pt.woundId, label: pt.woundType + ' · ' + pt.site, on: true },
+      { id: 'W-2', label: 'Healed · L heel · closed 2026-04-02', on: false }
+    ].map(w => ({
+      id: w.id, label: w.label, go: () => {},
+      style: 'display:flex;align-items:center;gap:8px;height:34px;padding:0 13px;border-radius:9px;cursor:pointer;' +
+        "font-family:'DM Sans',sans-serif;font-size:12.5px;border:1px solid " +
+        (w.on ? 'rgba(31,111,107,.45)' : 'rgba(28,25,23,.11)') + ';background:' + (w.on ? '#e9f3f2' : '#fffefc') +
+        ';color:' + (w.on ? '#175a56' : '#57514c')
+    }));
+
+    const stepDefs = [
+      { title: 'Patient & wound', sub: 'confirm identity' },
+      { title: 'Guided capture', sub: 'quality gate' },
+      { title: 'Measurements', sub: 'AI pre-filled' },
+      { title: 'Observations', sub: 'structured fields' },
+      { title: 'Triage & submit', sub: 'rules decide' }
+    ];
+    const steps = stepDefs.map((d, i) => ({
+      n: i < s.step ? '✓' : String(i + 1), title: d.title, sub: d.sub,
+      wrap: 'flex:1;padding:12px 14px;border-top:2px solid ' +
+        (i <= s.step ? ACC : 'rgba(28,25,23,.12)') + ';opacity:' + (i <= s.step ? '1' : '.55'),
+      circle: 'width:24px;height:24px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;' +
+        (i < s.step ? 'background:#e9f3f2;color:' + ACC : i === s.step ? 'background:' + ACC + ';color:#fff' : 'background:#f2efeb;color:#8a827b'),
+      label: 'font-size:12.5px;font-weight:' + (i === s.step ? '700' : '600') + ';white-space:nowrap;color:#1c1917'
+    }));
+
+    const checks = CHECKS.map((c, i) => {
+      const st = s.checkStates[i] || 'idle';
+      const failing = s.attempts === 0 || s.capture === 'failed';
+      const color = st === 'ok' ? '#3f7a4a' : st === 'fail' ? '#b4362f' : '#a8a09a';
+      return {
+        label: c.label,
+        mark: st === 'ok' ? '✓' : st === 'fail' ? '!' : '',
+        value: st === 'idle' ? '—' : st === 'pending' ? '···' : (st === 'fail' ? c.bad : c.ok),
+        dot: 'width:17px;height:17px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;background:' +
+          (st === 'ok' ? '#3f7a4a' : st === 'fail' ? '#b4362f' : '#ddd7d1') + (st === 'pending' ? ';animation:wtpulse 1s ease-in-out infinite' : ''),
+        valStyle: "font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:500;color:" + color
+      };
+    });
+
+    const gate = s.capture === 'passed' ? ['Passed', '#eef6ef', '#2f6338']
+      : s.capture === 'failed' ? ['Rejected', '#fdf1ef', '#8f2b25']
+      : s.capture === 'scanning' ? ['Checking…', '#fdf6ea', '#8a5514'] : ['Awaiting capture', '#f4f1ed', '#57514c'];
+
+    const tissues = [
+      { label: 'Granulation', key: 'gran', color: '#c9705e' },
+      { label: 'Slough', key: 'slough', color: '#d8c08a' },
+      { label: 'Eschar', key: 'eschar', color: '#4a423c' },
+      { label: 'Epithelial', key: 'epi', color: '#e3ae9f' }
+    ].map(t => ({ label: t.label, color: t.color, value: s.f[t.key], onChange: this.setNum(t.key) }));
+    const total = s.f.gran + s.f.slough + s.f.eschar + (s.f.epi || 0);
+
+    const signOpts = ['Redness > 2 cm', 'Warmth', 'Swelling', 'Maceration', 'Purulence', 'Odor', 'Increasing pain', 'Fever / systemic']
+      .map(label => ({ label, pick: this.toggleSign(label), style: this.chip(s.f.signs.indexOf(label) >= 0) }));
+
+    const triage = [
+      { title: 'Clinical red flag — infection indicators', body: 'Purulence and periwound warmth were recorded together. Clinic protocol routes this straight to the urgent queue regardless of trend.', trace: 'RF-03 · purulence=true AND warmth=true · severity urgent', bg: '#fdf1ef', border: 'rgba(180,54,47,.22)', dot: 'width:8px;height:8px;flex:none;margin-top:5px;border-radius:50%;background:#b4362f' },
+      this.trendCard(s),
+      { title: 'Symptom escalation — pain', body: 'Pain moved 4 → ' + s.f.pain + ' since the last visit, above the ' + s.thresholds.pain + '-point change threshold.', trace: 'SY-02 · Δpain +' + (s.f.pain - 4) + ' ≥ ' + s.thresholds.pain + ' · severity needs-review', bg: '#fdf6ea', border: 'rgba(168,106,31,.22)', dot: 'width:8px;height:8px;flex:none;margin-top:5px;border-radius:50%;background:#a86a1f' },
+      { title: 'Capture quality — passed on retake', body: 'First image rejected for blur and oblique angle; second image passed all five checks and was used for scoring.', trace: 'QG-00 · 1 rejected, 1 accepted · not scored, not trained on', bg: '#f7f5f2', border: 'rgba(28,25,23,.09)', dot: 'width:8px;height:8px;flex:none;margin-top:5px;border-radius:50%;background:#8a827b' }
+    ];
+
+    const rulePreview = [
+      { label: 'Red flag: infection signs', detail: s.f.signs.indexOf('Purulence') >= 0 ? 'RF-03 would fire · urgent' : 'RF-03 clear', dot: 'width:7px;height:7px;flex:none;margin-top:5px;border-radius:50%;background:' + (s.f.signs.indexOf('Purulence') >= 0 ? '#b4362f' : '#3f7a4a') },
+      { label: 'Trend: area change', detail: 'TD-01 · threshold −' + s.thresholds.area + '% / 3 weeks', dot: 'width:7px;height:7px;flex:none;margin-top:5px;border-radius:50%;background:#a86a1f' },
+      { label: 'Symptom: pain delta', detail: 'SY-02 · Δ' + (s.f.pain - 4) + ' vs threshold ' + s.thresholds.pain, dot: 'width:7px;height:7px;flex:none;margin-top:5px;border-radius:50%;background:' + (s.f.pain - 4 >= s.thresholds.pain ? '#a86a1f' : '#3f7a4a') },
+      { label: 'Exudate: amount & type', detail: 'EX-01 · ' + s.f.exudate + ' / ' + s.f.exType, dot: 'width:7px;height:7px;flex:none;margin-top:5px;border-radius:50%;background:' + (s.f.exudate === 'Heavy' ? '#a86a1f' : '#3f7a4a') }
+    ];
+
+    /* ---- image-assessment model (wound-image-assessment skill) ---- */
+    const scaleOn = s.scaleFound;
+    const grade = !scaleOn ? 'C' : s.capture === 'passed' ? 'A' : s.capture === 'failed' ? 'D' : 'B';
+    const gradeMeta = {
+      A: ['scale in frame, perpendicular, even light, margins + 4 cm periwound visible', '#1f6f6b'],
+      B: ['usable — one or two limitations', '#3f7a4a'],
+      C: ['marginal — several findings unreliable', '#a86a1f'],
+      D: ['not assessable — retake required', '#b4362f']
+    }[grade];
+    const limitations = [].concat(
+      scaleOn ? [] : ['No fiducial marker in frame'],
+      s.capture === 'failed' ? ['Sharpness below threshold', 'Angle 19° off perpendicular'] : [],
+      s.tone === 'V–VI' ? ['Erythema assessment on Fitzpatrick V–VI — compare against adjacent skin'] : [],
+      ['Periwound margin partially outside frame']
+    );
+
+    const chipRow = (key, opts) => opts.map(label => ({
+      label, pick: this.toggleA(key, label), style: this.chip(s.a[key].indexOf(label) >= 0)
+    }));
+    const radioRow = (key, opts) => opts.map(label => ({
+      label, pick: this.setA(key, label), style: this.chip(s.a[key] === label)
+    }));
+
+    const tissueQuality = radioRow('granQuality', ['healthy', 'pale', 'dusky', 'friable', 'hypergranulation']);
+    const escharStates = radioRow('escharState', ['n/a', 'stable — dry, adherent', 'unstable — boggy, draining']);
+    const exposedOpts = chipRow('exposed', ['fascia', 'muscle', 'tendon', 'bone probeable']);
+    const edgeOpts = chipRow('edges', ['attached', 'unattached', 'epibole — rolled under', 'macerated', 'callused', 'fibrotic', 'punched-out', 'everted']);
+    const periwoundOpts = chipRow('periwound', ['erythema', 'maceration', 'excoriation', 'callus', 'hemosiderin staining', 'atrophie blanche', 'dryness', 'satellite lesions']);
+    const moistureOpts = radioRow('moisture', ['desiccated', 'moist', 'wet', 'saturated']);
+    const toneOpts = ['I–II', 'III–IV', 'V–VI', 'not recorded'].map(label => ({
+      label: 'Fitzpatrick ' + label, pick: this.setTone(label), style: this.chip(s.tone === label)
+    }));
+
+    const UNDET = ['Depth', 'Undermining', 'Tunnelling', 'Induration', 'Temperature', 'Odour', 'Pain', 'Blanchability'];
+    const bedside = UNDET.map(label => {
+      const recorded = (label === 'Depth' && s.f.depth) || (label === 'Pain' && s.f.pain != null) ||
+        (label === 'Odour' && s.f.signs.indexOf('Odor') >= 0) || (label === 'Temperature' && s.f.signs.indexOf('Warmth') >= 0);
+      return {
+        label,
+        state: recorded ? 'recorded at bedside' : 'not obtainable from image',
+        style: 'display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border-radius:8px;background:' +
+          (recorded ? '#eef6ef' : 'transparent') + ';border:1px solid ' + (recorded ? 'rgba(63,122,74,.25)' : 'rgba(28,25,23,.09)'),
+        valStyle: "font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:" + (recorded ? '#2f6338' : '#8a827b')
+      };
+    });
+
+    const nerds = [
+      { label: 'Non-healing', img: true, on: true },
+      { label: 'Exudate', img: false, on: s.f.exudate === 'Heavy' },
+      { label: 'Red friable granulation', img: true, on: s.a.granQuality === 'friable' },
+      { label: 'Debris', img: true, on: s.f.slough >= 40 },
+      { label: 'Smell', img: false, on: s.f.signs.indexOf('Odor') >= 0 }
+    ];
+    const stonees = [
+      { label: 'Size increasing', img: true, on: true },
+      { label: 'Temperature', img: false, on: s.f.signs.indexOf('Warmth') >= 0 },
+      { label: 'Os — probe to bone', img: false, on: s.a.exposed.indexOf('bone probeable') >= 0 },
+      { label: 'New breakdown', img: true, on: false },
+      { label: 'Exudate / erythema / oedema', img: true, on: s.f.signs.indexOf('Redness > 2 cm') >= 0 },
+      { label: 'Smell', img: false, on: s.f.signs.indexOf('Odor') >= 0 }
+    ];
+    const screenRow = (r) => ({
+      label: r.label,
+      mark: r.on ? 'present' : 'not identified',
+      tag: r.img ? 'image-assessable' : 'bedside only',
+      dot: 'width:7px;height:7px;flex:none;border-radius:50%;background:' + (r.on ? '#b4362f' : '#cfc9c3'),
+      markStyle: 'font-size:11.5px;font-weight:' + (r.on ? '700' : '500') + ';color:' + (r.on ? '#8f2b25' : '#8a827b'),
+      tagStyle: "font-family:'IBM Plex Mono',monospace;font-size:9.5px;padding:2px 6px;border-radius:5px;background:" +
+        (r.img ? '#eef5f4;color:#1f5652' : '#f4f1ed;color:#78716c')
+    });
+
+    const escalation = [
+      { level: 'urgent', finding: 'Features associated with local infection', action: 'Clinical correlation indicated — do not assert infection from the image. Urgent clinician review.' },
+      { level: 'refer', finding: 'Area increased for the first time in the episode', action: 'Below the 4-week healing benchmark — review dressing and offloading plan.' }
+    ].concat(s.a.exposed.indexOf('bone probeable') >= 0
+      ? [{ level: 'emergency', finding: 'Bone probeable in wound bed', action: 'Osteomyelitis suspected — same-day medical review and imaging.' }] : []
+    ).map(f => ({
+      level: f.level.toUpperCase(), finding: f.finding, action: f.action,
+      wrap: 'padding:11px 13px;border-radius:10px;border-left:3px solid ' +
+        (f.level === 'emergency' ? '#7a1f2b' : f.level === 'urgent' ? '#b4362f' : '#1f6f6b') +
+        ';background:' + (f.level === 'emergency' ? '#f6ecee' : f.level === 'urgent' ? '#fdf1ef' : '#eef5f4'),
+      lv: "font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;font-weight:700;color:" +
+        (f.level === 'emergency' ? '#7a1f2b' : f.level === 'urgent' ? '#8f2b25' : '#1f5652')
+    }));
+
+    const confPill = (c) => "font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:1px 6px;border-radius:5px;border:1px solid " +
+      (c === 'high' ? '#1f6f6b;color:#1f5652' : c === 'moderate' ? '#3f6d88;color:#2c5a78' : '#c7c0b9;color:#78716c');
+
+    const areaPct = this.area() === '—' ? null : Math.round((this.area() / 7.6 - 1) * 100);
+
+    const pushInputs = [];
+    if (this.area() === '—') pushInputs.push('surface area (no scale reference, no ruler value)');
+    if (!s.f.exudate || s.f.exudate === 'Not recorded') pushInputs.push('exudate amount');
+    const pushComputable = pushInputs.length === 0;
+    const pushScore = pushComputable ? Math.min(17, Math.round((parseFloat(this.area()) || 0) / 2) + (s.f.exudate === 'Heavy' ? 3 : 2) + 3) : null;
+
+    const nextCapture = [].concat(
+      scaleOn ? [] : ['Place the 20 mm marker flat, in the same plane as the wound'],
+      ['Include 4 cm of periwound skin on all sides'],
+      ['Hold the camera perpendicular — under 10° off axis'],
+      s.tone === 'V–VI' ? ['Include an adjacent unaffected skin area for tone comparison'] : []
+    );
+
+    const rolePill = (r) => 'padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap;background:' +
+      (r === 'Clinician' ? '#eef5f4;color:#1f5652' : r === 'Clinic Admin' ? '#f0eef8;color:#454078' : '#f4f1ed;color:#57514c');
+
+    const staff = [
+      { name: 'Dr. Rania Nasser', email: 'r.nasser@alnakheel.sa', role: 'Clinician', scope: 'All clinic patients', active: '4 min ago', mfa: 'Enabled', initials: 'RN' },
+      { name: 'Dr. Yousef Bin Talal', email: 'y.bintalal@alnakheel.sa', role: 'Clinician', scope: 'All clinic patients', active: '2 h ago', mfa: 'Enabled', initials: 'YB' },
+      { name: 'Hala Al-Sabti', email: 'h.alsabti@alnakheel.sa', role: 'Nurse', scope: '11 assigned patients', active: 'just now', mfa: 'Enabled', initials: 'HA' },
+      { name: 'Omar Al-Ghamdi', email: 'o.alghamdi@alnakheel.sa', role: 'Nurse', scope: '8 assigned patients', active: '26 min ago', mfa: 'Not set', initials: 'OG' },
+      { name: 'Layla Haddad', email: 'l.haddad@alnakheel.sa', role: 'Clinic Admin', scope: 'Clinic settings & staff', active: '1 h ago', mfa: 'Enabled', initials: 'LH' }
+    ].map(m => Object.assign({}, m, { rolePill: rolePill(m.role), mfaColor: m.mfa === 'Enabled' ? '#2f6338' : '#a86a1f' }));
+
+    const invites = [
+      { email: 'n.alfarsi@alnakheel.sa', role: 'Nurse', expires: 'in 68 h' },
+      { email: 's.aldawood@alnakheel.sa', role: 'Clinician', expires: 'in 21 h' }
+    ].map(i => Object.assign({}, i, { rolePill: rolePill(i.role) }));
+
+    const flagDef = [
+      { k: 'vision', name: 'AI vision assist — boundary & area', stage: 'PILOT', desc: 'Marker-calibrated segmentation pre-fills measurements. Nurse value remains authoritative; every output stores its model version.' },
+      { k: 'summary', name: 'AI longitudinal summary', stage: 'PILOT', desc: 'Drafts a visit narrative from structured history. Clinician reviews before it enters the record.' },
+      { k: 'risk', name: 'Predictive risk model', stage: 'BLOCKED', desc: 'Requires a validated labeled outcome dataset and formal clinical evaluation before enablement.' },
+      { k: 'patient', name: 'Patient home capture', stage: 'PHASE 2', desc: 'Simplified capture flow with visual instructions. Depends on marker distribution logistics.' }
+    ].map(f => ({
+      name: f.name, stage: f.stage, desc: f.desc, toggle: this.toggleFlag(f.k),
+      stagePill: 'font-family:\'IBM Plex Mono\',monospace;font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:5px;background:' +
+        (f.stage === 'PILOT' ? '#eef5f4;color:#1f5652' : f.stage === 'BLOCKED' ? '#fdf1ef;color:#8f2b25' : '#f4f1ed;color:#57514c'),
+      switch: 'width:44px;height:25px;flex:none;border-radius:14px;border:none;cursor:pointer;padding:3px;display:flex;justify-content:' +
+        (s.flags[f.k] ? 'flex-end' : 'flex-start') + ';background:' + (s.flags[f.k] ? ACC : '#ddd7d1'),
+      knob: 'width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)'
+    }));
+
+    const thresholds = [
+      { key: 'area', label: 'Expected area reduction / 3 wks', min: 0, max: 40, display: s.thresholds.area + '%' },
+      { key: 'pain', label: 'Pain change to flag', min: 1, max: 5, display: '+' + s.thresholds.pain },
+      { key: 'stall', label: 'Stalled-healing interval', min: 7, max: 42, display: s.thresholds.stall + ' d' }
+    ].map(t => ({ label: t.label, min: t.min, max: t.max, value: s.thresholds[t.key], display: t.display, onChange: this.setTh(t.key) }));
+
+    const auditPill = (r) => 'padding:2px 8px;border-radius:6px;font-size:10.5px;font-weight:600;background:' +
+      (r === 'Denied' ? '#fdf1ef;color:#8f2b25' : '#eef6ef;color:#2f6338');
+    const audit = [
+      { time: '2026-08-10 09:42', actor: 'nurse.hala', action: 'Submitted visit v6 (2 images, 1 rejected)', target: 'pt_4471A/W-1', result: 'Allowed' },
+      { time: '2026-08-10 09:42', actor: 'system', action: 'Alert RF-03 raised, SMS + in-app dispatched', target: 'alert_5512', result: 'Allowed' },
+      { time: '2026-08-10 09:12', actor: 'nurse.omar', action: 'Attempted patient view outside assignment', target: 'pt_9931C', result: 'Denied' },
+      { time: '2026-08-10 08:55', actor: 'dr.nasser', action: 'Viewed wound history and images', target: 'pt_2214D/W-3', result: 'Allowed' },
+      { time: '2026-08-09 17:20', actor: 'admin.layla', action: 'Invited staff member (Nurse)', target: 'invite_318', result: 'Allowed' },
+      { time: '2026-08-09 16:04', actor: 'dr.nasser', action: 'Published rules version v1.8', target: 'rules_v1.8', result: 'Allowed' },
+      { time: '2026-08-09 11:31', actor: 'admin.layla', action: 'Exported clinical summary PDF', target: 'pt_5518C/W-1', result: 'Allowed' }
+    ].map(a => Object.assign({}, a, { pill: auditPill(a.result) }));
+
+    const alerts = [
+      { sev: 'Urgent', title: 'Surgical dehiscence — area +18%, purulent drainage', trace: 'RF-03 + TD-01 · v1.8 · pt_2214D', notified: 'Dr. Nasser · SMS + in-app', state: 'Unacknowledged 41 min' },
+      { sev: 'Urgent', title: 'Sacral pressure injury — new undermining recorded', trace: 'RF-05 · v1.8 · pt_3902B', notified: 'Dr. Bin Talal · in-app', state: 'Acknowledged 12 min' },
+      { sev: 'Needs review', title: 'R heel pressure injury — no improvement in 21 days', trace: 'ST-01 · v1.8 · pt_6087E', notified: 'Dr. Nasser · in-app', state: 'Open · SLA 24 h' },
+      { sev: 'Needs review', title: 'Overdue check-in — 52 hours past schedule', trace: 'AD-02 · v1.8 · pt_1740F', notified: 'nurse.omar · in-app', state: 'Reminder sent' }
+    ].map(a => Object.assign({}, a, { pill: PILL[a.sev] }));
+
+    const stubTitle = s.screen === 'newpatient' ? 'Register patient' : 'Clinical summary export';
+    const stubBody = s.screen === 'newpatient'
+      ? 'Intake (demographics, MRN, medical context, consent version, wound identity and site) is scoped but not drawn in this pass — the review is focused on the check-in flow. Say the word and I will build it next.'
+      : 'The export template — printable summary with photo timeline, measurements, alert history, clinician sign-off and audit stamp — is scoped but not drawn in this pass.';
+
+    return {
+      clinicName, aiOn,
+      userName: s.role === 'nurse' ? 'Hala Al-Sabti' : 'Layla Haddad',
+      userRole: s.role === 'nurse' ? 'Nurse · wound staff' : 'Clinic Admin',
+      userInitials: s.role === 'nurse' ? 'HA' : 'LH',
+      setNurse: this.setRole('nurse'), setAdmin: this.setRole('admin'),
+      tabNurse: tabBase + 'background:' + (s.role === 'nurse' ? '#fffefc' : 'transparent') + ';color:' + (s.role === 'nurse' ? '#1c1917' : '#8a827b') + (s.role === 'nurse' ? ';box-shadow:0 1px 2px rgba(0,0,0,.08)' : ''),
+      tabAdmin: tabBase + 'background:' + (s.role === 'admin' ? '#fffefc' : 'transparent') + ';color:' + (s.role === 'admin' ? '#1c1917' : '#8a827b') + (s.role === 'admin' ? ';box-shadow:0 1px 2px rgba(0,0,0,.08)' : ''),
+      nav,
+      narrow: s.narrow,
+      ptHead: s.narrow ? 'display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin-bottom:18px' : 'display:flex;gap:18px;align-items:flex-start;margin-bottom:20px',
+      ptActions: s.narrow ? 'display:flex;gap:8px;flex-wrap:wrap;width:100%' : 'display:flex;gap:8px',
+      woundTabRow: s.narrow ? 'display:flex;gap:8px;margin-bottom:14px;padding-bottom:10px;overflow-x:auto;border-bottom:1px solid rgba(28,25,23,.09)' : 'display:flex;gap:8px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(28,25,23,.09)',
+      pageHead: s.narrow ? 'display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin-bottom:18px' : 'display:flex;align-items:flex-end;gap:16px;margin-bottom:20px',
+      pad: s.narrow ? 'padding:18px 14px 40px' : 'padding:25px 28px 44px',
+      minW: s.narrow ? 'min-width:0' : 'min-width:1000px',
+      gridKpi: s.narrow ? 'display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px' : 'display:grid;grid-template-columns:repeat(4,minmax(210px,1fr));gap:12px;min-width:1000px',
+      rosterHead: s.narrow ? 'display:none' : 'display:grid;grid-template-columns:52px 1.5fr 1.4fr 92px 108px 1fr 128px;gap:14px',
+      rosterRow: s.narrow ? 'display:grid;grid-template-columns:44px 1fr auto;gap:8px 12px' : 'display:grid;grid-template-columns:52px 1.5fr 1.4fr 92px 108px 1fr 128px;gap:14px',
+      grid155: s.narrow ? 'display:grid;grid-template-columns:1fr;gap:14px' : 'display:grid;grid-template-columns:1.55fr 1fr;gap:16px',
+      gridSide: s.narrow ? 'display:grid;grid-template-columns:1fr;gap:14px' : 'display:grid;grid-template-columns:1fr 330px;gap:16px;min-width:1000px',
+      grid2: s.narrow ? 'display:grid;grid-template-columns:1fr;gap:12px' : 'display:grid;grid-template-columns:1fr 1fr;gap:14px',
+      grid3: s.narrow ? 'display:grid;grid-template-columns:1fr;gap:10px' : 'display:grid;grid-template-columns:repeat(3,1fr);gap:10px',
+      grid4: s.narrow ? 'display:grid;grid-template-columns:repeat(2,1fr);gap:12px' : 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px',
+      alertRow: s.narrow ? 'display:flex;flex-direction:column;gap:7px;align-items:flex-start;text-align:left' : 'display:grid;grid-template-columns:110px 1fr 150px 132px;gap:16px;align-items:center',
+      cellEnd: s.narrow ? 'text-align:left' : 'text-align:right',
+      tblHead: s.narrow ? 'display:none' : 'display:grid;grid-template-columns:1.3fr 1fr 1.2fr 1fr 110px;gap:14px',
+      tblRow: s.narrow ? 'display:flex;flex-direction:column;gap:6px;align-items:flex-start;text-align:left' : 'display:grid;grid-template-columns:1.3fr 1fr 1.2fr 1fr 110px;gap:14px',
+      stepperStyle: s.narrow ? 'display:flex;gap:0;margin-bottom:18px;overflow-x:auto;padding-bottom:6px' : 'display:flex;gap:0;margin-bottom:22px',
+      thRow: s.narrow ? 'display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px' : 'display:flex;align-items:center;gap:14px',
+      thLabel: s.narrow ? 'width:100%;font-size:12.5px;font-weight:600' : 'width:230px;flex:none;font-size:12.5px',
+      drawerOpen: s.narrow && s.drawer,
+      openDrawer: () => this.setState({ drawer: true }),
+      closeDrawer: () => this.setState({ drawer: false }),
+      shellStyle: "display:flex;height:100vh;min-height:" + (s.narrow ? '0' : '720px') + ";font-family:'DM Sans',Helvetica,sans-serif;background:#f6f4f1;overflow:hidden",
+      asideStyle: 'width:238px;flex:none;display:flex;flex-direction:column;background:#fffefc;border-right:1px solid rgba(28,25,23,.09)' +
+        (s.narrow
+          ? ';position:fixed;top:0;bottom:0;left:0;z-index:60;transition:transform .22s ease;box-shadow:0 12px 40px rgba(28,25,23,.22);transform:translateX(' + (s.drawer ? '0' : '-102%') + ')'
+          : ''),
+      headerStyle: 'height:58px;flex:none;display:flex;align-items:center;gap:' + (s.narrow ? '10px' : '14px') +
+        ';padding:0 ' + (s.narrow ? '14px' : '24px') + ';background:#fffefc;border-bottom:1px solid rgba(28,25,23,.09)',
+      searchStyle: s.narrow
+        ? 'display:none'
+        : 'display:flex;align-items:center;gap:8px;height:33px;padding:0 11px;background:#f2efeb;border-radius:8px;width:250px',
+      crumbRoot: s.role === 'nurse' ? 'Nurse workspace' : 'Clinic administration',
+      crumbLeaf: s.screen === 'patient' ? pt.name : s.screen === 'checkin' ? 'Check-in · ' + stepDefs[s.step].title
+        : s.screen === 'roster' ? 'Patients' : s.screen === 'alerts' ? 'Alerts' : s.screen === 'team' ? 'Team'
+        : s.screen === 'flags' ? 'AI & protocol' : s.screen === 'audit' ? 'Access audit' : s.screen === 'notes' ? 'Design notes' : '',
+      query: s.query, onQuery: (e) => this.setState({ query: e.target.value }),
+      goAlerts: () => this.setState({ role: 'nurse', screen: 'alerts' }), goRoster: this.go('roster'),
+      goNewPatient: this.go('newpatient'), goExport: this.go('export'),
+      startCheckin: this.beginCheckin, startCheckinFromRoster: this.beginCheckin, cancelCheckin: this.go('patient'),
+      isRoster: s.screen === 'roster', isPatient: s.screen === 'patient', isCheckin: s.screen === 'checkin',
+      isAlerts: s.screen === 'alerts', isTeam: s.screen === 'team', isFlags: s.screen === 'flags',
+      isAudit: s.screen === 'audit', isNotes: s.screen === 'notes',
+      isStub: s.screen === 'newpatient' || s.screen === 'export', stubTitle, stubBody,
+      filters, rows, visits, woundTabs,
+      pt: Object.assign({}, pt, {
+        pill: PILL[pt.status],
+        granW: 'width:' + pt.gran + '%', sloughW: 'width:' + pt.slough + '%', escharW: 'width:' + pt.eschar + '%',
+        areaDeltaStyle: "font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:" + (pt.trendDir === 'bad' ? '#8f2b25' : '#2f6338')
+      }),
+      ackAlert: this.ackAlert,
+      steps, step0: s.step === 0, step1: s.step === 1, step2: s.step === 2, step3: s.step === 3, step4: s.step === 4,
+      checks, startCapture: this.startCapture,
+      scanning: s.capture === 'scanning', captureFailed: s.capture === 'failed',
+      captureBlur: s.capture === 'passed' ? 'none' : s.capture === 'failed' ? 'blur(4px)' : 'blur(1.5px)',
+      captureHint: s.capture === 'passed' ? 'accepted · scored' : s.capture === 'failed' ? 'rejected · retake' : 'hold steady',
+      captureDist: s.capture === 'idle' ? 'distance —' : 'distance 22.4 cm',
+      captureAngle: s.capture === 'failed' ? 'angle 19° ✕' : s.capture === 'idle' ? 'angle —' : 'angle 3° ✓',
+      shutterLabel: s.capture === 'scanning' ? 'Checking image…' : s.capture === 'passed' ? 'Recapture' : s.capture === 'failed' ? 'Retake photo' : 'Capture photo',
+      shutterStyle: 'height:42px;padding:0 22px;border-radius:10px;border:none;cursor:pointer;' +
+        "font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:700;background:" +
+        (s.capture === 'scanning' ? '#57514c' : s.capture === 'passed' ? '#38b2a8' : '#fffefc') +
+        ';color:' + (s.capture === 'scanning' ? '#fff' : s.capture === 'passed' ? '#04302c' : '#1c1917'),
+      gateLabel: gate[0],
+      gatePill: 'padding:3px 10px;border-radius:7px;font-size:11px;font-weight:700;background:' + gate[1] + ';color:' + gate[2],
+      aiCaptureCopy: s.capture === 'passed'
+        ? 'Boundary traced and scale resolved from the 20 mm marker. Measurements pre-filled on the next step with per-value confidence.'
+        : s.capture === 'failed'
+          ? 'Segmentation not attempted — the image failed the quality gate. Rejected frames never reach the model or the training set.'
+          : 'Waiting for an accepted frame. The model only runs on images that pass all five capture checks.',
+      aiSeg: s.capture === 'passed' ? 'conf 0.91' : s.capture === 'failed' ? 'not run' : '—',
+      aiScale: s.capture === 'passed' ? '8.42 px/mm' : '—',
+      f: s.f, areaCalc: this.area(),
+      onLength: this.setF('length'), onWidth: this.setF('width'), onDepth: this.setF('depth'), onPain: this.setNum('pain'),
+      tissues,
+      tissueTotalText: total === 100 ? 'Total 100% — valid' : 'Total ' + total + '% — must equal 100% before submission',
+      tissueTotalStyle: 'margin-top:6px;font-family:\'IBM Plex Mono\',monospace;font-size:11.5px;font-weight:600;color:' + (total === 100 ? '#2f6338' : '#a86a1f'),
+      exudateOpts: ['None', 'Light', 'Moderate', 'Heavy'].map(label => ({ label, pick: this.pickF('exudate', label), style: this.chip(s.f.exudate === label) })),
+      exTypeOpts: ['Serous', 'Serosanguinous', 'Sanguineous', 'Purulent'].map(label => ({ label, pick: this.pickF('exType', label), style: this.chip(s.f.exType === label) })),
+      signOpts,
+      painDelta: (s.f.pain - 4 >= 0 ? '+' : '') + (s.f.pain - 4) + ' vs last visit',
+      painDeltaStyle: "font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;color:" + (s.f.pain - 4 >= s.thresholds.pain ? '#8f2b25' : '#78716c'),
+      rulePreview, triage,
+      scaleOn, scaleOff: !scaleOn, toggleScale: this.toggleScale,
+      grade, gradeNote: gradeMeta[0],
+      gradeBadge: 'width:30px;height:30px;flex:none;border-radius:8px;display:grid;place-items:center;font-size:15px;font-weight:700;color:#fff;background:' + gradeMeta[1],
+      scaleToggleStyle: 'height:30px;padding:0 11px;border-radius:8px;cursor:pointer;border:1px solid ' +
+        (scaleOn ? 'rgba(31,111,107,.45)' : 'rgba(168,106,31,.45)') + ';background:' + (scaleOn ? '#e9f3f2' : '#fdf6ea') +
+        ";color:" + (scaleOn ? '#175a56' : '#8a5514') + ";font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:600",
+      scaleToggleLabel: scaleOn ? 'Marker detected — switch to no-marker capture' : 'No marker — switch to marker capture',
+      limitations, aspectRatio: '1.6 : 1',
+      tissueQuality, escharStates, exposedOpts, edgeOpts, periwoundOpts, moistureOpts, toneOpts,
+      toneNote: s.tone === 'V–VI'
+        ? 'On Fitzpatrick V–VI, inflammation and deep tissue injury present as purple, maroon or subtle darkening — not red. Compare against adjacent unaffected skin; absence of red hue is not evidence against inflammation.'
+        : 'Skin tone is recorded because erythema-dependent findings read differently across the Fitzpatrick range.',
+      bedside,
+      nerds: nerds.map(screenRow), stonees: stonees.map(screenRow),
+      infectionNote: 'Features associated with infection — clinical correlation indicated. The image alone never asserts infection.',
+      escalation,
+      etiology: 'Diabetic / neuropathic ulcer', etiologyConf: 'moderate', etiologyConfStyle: confPill('moderate'),
+      differential: 'Neuroischaemic ulcer · Pressure injury from footwear',
+      etiologyRationale: 'Plantar forefoot site with callus rim and punched-out margin; morphology and site agree.',
+      stagingNote: 'Not applicable — NPIAP staging applies to pressure injuries only. Never stage a diabetic, venous, arterial, moisture or skin-tear wound.',
+      hardRules: [
+        'Never reverse-stage — a healing Stage 4 stays "healing Stage 4"',
+        'Slough or eschar obscuring the bed = Unstageable, never a depth-based stage',
+        'Never debride dry, stable, intact heel eschar — protect and offload',
+        'Biofilm is never asserted; it is not visually confirmable'
+      ],
+      pushComputable, pushBlocked: !pushComputable, pushScore, pushMissing: pushInputs.join(', '),
+      areaKnown: this.area() !== '—', areaUnknown: this.area() === '—',
+      areaUp: areaPct != null && areaPct > 0, areaDown: areaPct != null && areaPct < 0, areaFlat: areaPct === 0,
+      areaDeltaText: areaPct == null ? '' : (areaPct > 0 ? '+' : '−') + Math.abs(areaPct) + '%',
+      onRulerL: this.setF('rulerL'), onRulerW: this.setF('rulerW'), onRulerD: this.setF('rulerD'),
+      nextCapture,
+      prevStep: this.prevStep, nextStep: this.nextStep,
+      nextLabel: s.step === 4 ? 'Submit check-in' : 'Continue',
+      nextStyle: 'height:38px;padding:0 20px;border-radius:9px;border:none;cursor:pointer;' +
+        "font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;color:#fff;background:" +
+        (s.step === 1 && s.capture !== 'passed' ? '#b8b2ab' : ACC),
+      backStyle: 'height:38px;padding:0 17px;border-radius:9px;cursor:pointer;' +
+        "font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;border:1px solid rgba(28,25,23,.12);background:#fffefc;color:#57514c;visibility:" +
+        (s.step === 0 ? 'hidden' : 'visible'),
+      footHint: s.step === 1
+        ? (s.capture === 'passed' ? 'Image accepted — continue to measurements.' : 'The quality gate must pass before the visit can be scored.')
+        : s.step === 4 ? 'Submitting writes the visit, fires the alert and stamps the audit log.'
+        : 'Draft autosaves. Step ' + (s.step + 1) + ' of 5.',
+      alerts, staff, invites, flags: flagDef, thresholds, audit,
+      openInvite: () => this.setState({ inviteOpen: true }), closeInvite: () => this.setState({ inviteOpen: false }),
+      sendInvite: () => { this.setState({ inviteOpen: false }); this.flash('Invitation sent · scoped to ' + clinicName); },
+      inviteOpen: s.inviteOpen,
+      inviteRoles: ['Nurse', 'Clinician', 'Clinic Admin'].map(label => ({ label, pick: () => this.setState({ inviteRole: label }), style: this.chip(s.inviteRole === label) })),
+      toast: s.toast
+    };
+  }
+}
+
+</script>
+</body>
+</html>

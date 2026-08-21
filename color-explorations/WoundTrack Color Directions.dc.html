@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#eceaf3;color:#1b2559;-webkit-font-smoothing:antialiased}
+  *{box-sizing:border-box}
+  a{color:#3b5bdb;text-decoration:none}
+  a:hover{color:#2842b8;text-decoration:underline}
+</style>
+</helmet>
+
+<section style="display:flex;flex-direction:column;gap:26px;padding:44px 44px 8px;font-family:'Plus Jakarta Sans',Helvetica,sans-serif">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:940px">
+    <h1 style="margin:0;font-size:34px;font-weight:800;letter-spacing:-1px">Turn 3 — one primary colour, big icons, modern type</h1>
+    <p style="margin:0;font-size:15px;line-height:1.55;color:#5b6390;text-wrap:pretty">Manrope throughout, type scaled up a step, 44px icon tiles, and a single primary colour per version — the active tab's icon and label carry it, everything else is neutral grey. Same clickable app: tabs, urgent filter, patient records, alert acknowledgement. Try <a href="#3a">3a</a> citron yellow, <a href="#3b">3b</a> electric violet, <a href="#3c">3c</a> aqua.</p>
+    <p style="margin:4px 0 0;font-size:14px;line-height:1.55;color:#5b6390;max-width:940px;text-wrap:pretty">Yellow can't carry white text, so in 3a the primary sits behind near-black ink and the sidebar's active colour drops to a deep citron for contrast — that's the trade-off to weigh against 3b/3c.</p>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+    <div id="3a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-grid;place-items:center;min-width:30px;height:26px;padding:0 9px;border-radius:8px;background:#1b2559;color:#fff;font-size:12.5px;font-weight:700;font-family:'IBM Plex Mono',monospace">3a</span>
+        <span style="font-size:16px;font-weight:700">Citron</span>
+        <span style="font-size:13px;color:#5b6390">primary #E2E54E on warm off-white, near-black ink</span>
+      </div>
+      <div style="width:1240px;height:800px;border-radius:22px;overflow:hidden;box-shadow:0 24px 60px rgba(27,37,89,.14)">
+        <dc-import name="WoundAppModern" theme="citron" hint-size="1240px,800px"></dc-import>
+      </div>
+    </div>
+
+    <div id="3b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-grid;place-items:center;min-width:30px;height:26px;padding:0 9px;border-radius:8px;background:#1b2559;color:#fff;font-size:12.5px;font-weight:700;font-family:'IBM Plex Mono',monospace">3b</span>
+        <span style="font-size:16px;font-weight:700">Electric Violet</span>
+        <span style="font-size:13px;color:#5b6390">primary #4B49F5, the date-picker blue-purple</span>
+      </div>
+      <div style="width:1240px;height:800px;border-radius:22px;overflow:hidden;box-shadow:0 24px 60px rgba(27,37,89,.14)">
+        <dc-import name="WoundAppModern" theme="violet" hint-size="1240px,800px"></dc-import>
+      </div>
+    </div>
+
+    <div id="3c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-grid;place-items:center;min-width:30px;height:26px;padding:0 9px;border-radius:8px;background:#1b2559;color:#fff;font-size:12.5px;font-weight:700;font-family:'IBM Plex Mono',monospace">3c</span>
+        <span style="font-size:16px;font-weight:700">Aqua</span>
+        <span style="font-size:13px;color:#5b6390">primary #17B3AE, teal-tinted page, deep teal ink</span>
+      </div>
+      <div style="width:1240px;height:800px;border-radius:22px;overflow:hidden;box-shadow:0 24px 60px rgba(27,37,89,.14)">
+        <dc-import name="WoundAppModern" theme="aqua" hint-size="1240px,800px"></dc-import>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:26px;padding:44px 44px 8px;font-family:'Plus Jakarta Sans',Helvetica,sans-serif">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:940px">
+    <h1 style="margin:0;font-size:34px;font-weight:800;letter-spacing:-1px">Turn 2 — flat colour, per-tab identity, clickable</h1>
+    <p style="margin:0;font-size:15px;line-height:1.55;color:#5b6390;text-wrap:pretty">Three palettes on the same working app: white sidebar, each nav item carries its own colour with an icon and a one-line description, and the active tab is the only tinted one. Flat colour, no gradients. All four tabs click, the <strong>Urgent</strong> KPI filters the roster, any <strong>patient name</strong> opens the record, and alerts can be acknowledged. Try <a href="#2a">2a</a>, <a href="#2b">2b</a>, <a href="#2c">2c</a>.</p>
+    <p style="margin:4px 0 0;font-size:14px;line-height:1.55;color:#5b6390;max-width:940px;text-wrap:pretty">On your red question: red is spent <em>only</em> on unacknowledged urgency — status pill, alert card, the sidebar count. The Alerts tab itself uses plum/magenta so the nav never competes with a live escalation, and every other accent is held one step below red in saturation so it still wins the eye. See it on the Alerts tab in each version.</p>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+    <div id="2a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-grid;place-items:center;min-width:30px;height:26px;padding:0 9px;border-radius:8px;background:#1b2559;color:#fff;font-size:12.5px;font-weight:700;font-family:'IBM Plex Mono',monospace">2a</span>
+        <span style="font-size:16px;font-weight:700">Cobalt &amp; Mint</span>
+        <span style="font-size:13px;color:#5b6390">cool blue-grey page · indigo / teal / plum / amber tabs</span>
+      </div>
+      <div style="width:1180px;height:760px;border-radius:22px;overflow:hidden;box-shadow:0 24px 60px rgba(27,37,89,.14)">
+        <dc-import name="WoundApp" theme="cobalt" hint-size="1180px,760px"></dc-import>
+      </div>
+    </div>
+
+    <div id="2b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-grid;place-items:center;min-width:30px;height:26px;padding:0 9px;border-radius:8px;background:#1b2559;color:#fff;font-size:12.5px;font-weight:700;font-family:'IBM Plex Mono',monospace">2b</span>
+        <span style="font-size:16px;font-weight:700">Ink &amp; Citrus</span>
+        <span style="font-size:13px;color:#5b6390">warm paper page · royal blue / leaf / magenta / orange tabs</span>
+      </div>
+      <div style="width:1180px;height:760px;border-radius:22px;overflow:hidden;box-shadow:0 24px 60px rgba(27,37,89,.14)">
+        <dc-import name="WoundApp" theme="citrus" hint-size="1180px,760px"></dc-import>
+      </div>
+    </div>
+
+    <div id="2c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-grid;place-items:center;min-width:30px;height:26px;padding:0 9px;border-radius:8px;background:#1b2559;color:#fff;font-size:12.5px;font-weight:700;font-family:'IBM Plex Mono',monospace">2c</span>
+        <span style="font-size:16px;font-weight:700">Sand &amp; Sage</span>
+        <span style="font-size:13px;color:#5b6390">warm neutral page · denim / sage / plum / mustard tabs, clay red</span>
+      </div>
+      <div style="width:1180px;height:760px;border-radius:22px;overflow:hidden;box-shadow:0 24px 60px rgba(27,37,89,.14)">
+        <dc-import name="WoundApp" theme="sage" hint-size="1180px,760px"></dc-import>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:26px;padding:44px;font-family:'Plus Jakarta Sans',Helvetica,sans-serif">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <h1 style="margin:0;font-size:34px;font-weight:800;letter-spacing:-1px">Turn 1 — colour directions, roster only</h1>
+    <p style="margin:0;font-size:15px;line-height:1.55;color:#5b6390;text-wrap:pretty">Same screen, three palettes pulled from your references. Tell me an id — <a href="#1a">1a</a>, <a href="#1b">1b</a>, <a href="#1c">1c</a> — and I'll roll it through the whole prototype (roster, check-in steps, admin).</p>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+
+    <div id="1a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-grid;place-items:center;min-width:30px;height:26px;padding:0 9px;border-radius:8px;background:#1b2559;color:#fff;font-size:12.5px;font-weight:700;font-family:'IBM Plex Mono',monospace">1a</span>
+        <span style="font-size:16px;font-weight:700">Pastel Blocks</span>
+        <span style="font-size:13px;color:#5b6390">navy ink, candy tiles, white ground</span>
+      </div>
+      <div style="width:1180px;height:760px;border-radius:22px;overflow:hidden;background:#fff;box-shadow:0 24px 60px rgba(27,37,89,.14);display:flex">
+        <aside style="width:212px;flex:none;background:#1b2559;color:#fff;display:flex;flex-direction:column;padding:20px 14px;gap:22px">
+          <div style="display:flex;align-items:center;gap:9px;padding:0 6px">
+            <div style="width:28px;height:28px;border-radius:9px;background:#f5d948;position:relative"><div style="position:absolute;inset:8px;border-radius:50% 40% 55% 45%;background:#1b2559"></div></div>
+            <div style="line-height:1.15"><div style="font-size:15px;font-weight:800">WoundTrack</div><div style="font-size:10px;opacity:.6;font-weight:500">Riyadh Wound Clinic</div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="height:38px;border-radius:11px;background:#f5d948;color:#1b2559;display:flex;align-items:center;padding:0 13px;font-size:13.5px;font-weight:700">Patients</div>
+            <div style="height:38px;border-radius:11px;display:flex;align-items:center;padding:0 13px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72)">Check-ins</div>
+            <div style="height:38px;border-radius:11px;display:flex;align-items:center;padding:0 13px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72)">Alerts <span style="margin-left:auto;background:#f7607a;color:#fff;font-size:11px;font-weight:700;border-radius:7px;padding:1px 7px">2</span></div>
+            <div style="height:38px;border-radius:11px;display:flex;align-items:center;padding:0 13px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72)">Reports</div>
+          </div>
+          <div style="margin-top:auto;background:rgba(255,255,255,.09);border-radius:14px;padding:13px">
+            <div style="font-size:11.5px;font-weight:700;color:#a8e0c5">AI pilot on</div>
+            <div style="font-size:11.5px;line-height:1.45;color:rgba(255,255,255,.66);margin-top:3px">Measurements pre-filled, clinician confirms.</div>
+          </div>
+        </aside>
+        <main style="flex:1;min-width:0;display:flex;flex-direction:column;background:#fbfbfe">
+          <header style="height:62px;flex:none;display:flex;align-items:center;gap:12px;padding:0 26px;border-bottom:1px solid #e8e9f4">
+            <div style="font-size:13px;color:#8b91b4">Patients</div>
+            <div style="flex:1"></div>
+            <div style="display:flex;align-items:center;gap:9px;height:36px;padding:0 13px;background:#f1f2fa;border-radius:11px;width:260px;font-size:12.5px;color:#8b91b4">Search patients, MRN, wound ID</div>
+            <div style="width:36px;height:36px;border-radius:11px;background:#f7cbda;display:grid;place-items:center;font-size:12px;font-weight:700;color:#1b2559">NA</div>
+          </header>
+          <div style="flex:1;overflow:hidden;padding:24px 26px;display:flex;flex-direction:column;gap:18px">
+            <div style="display:flex;align-items:flex-end;gap:14px">
+              <div><h2 style="margin:0 0 4px;font-size:27px;font-weight:800;letter-spacing:-.7px">Patients</h2><p style="margin:0;font-size:13px;color:#8b91b4">18 active wounds · triage refreshed 4 min ago</p></div>
+              <div style="flex:1"></div>
+              <button style="height:40px;padding:0 17px;border-radius:12px;border:1.5px solid #dcdef0;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#1b2559;cursor:pointer">Add patient</button>
+              <button style="height:40px;padding:0 19px;border-radius:12px;border:none;background:#1b2559;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">New check-in</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+              <div style="background:#f7cbda;border-radius:16px;padding:16px 17px"><div style="font-size:11.5px;font-weight:700;color:#8f2f4d;text-transform:uppercase;letter-spacing:.4px">Urgent</div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.15;color:#1b2559">2</div><div style="font-size:11.5px;color:#7a4a5c">oldest unack 41 min</div></div>
+              <div style="background:#f5d948;border-radius:16px;padding:16px 17px"><div style="font-size:11.5px;font-weight:700;color:#7a5c00;text-transform:uppercase;letter-spacing:.4px">Needs review</div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.15;color:#1b2559">5</div><div style="font-size:11.5px;color:#7a5c00">SLA 24 h · 1 due today</div></div>
+              <div style="background:#a9c6f5;border-radius:16px;padding:16px 17px"><div style="font-size:11.5px;font-weight:700;color:#22417f;text-transform:uppercase;letter-spacing:.4px">Check-ins due</div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.15;color:#1b2559">7</div><div style="font-size:11.5px;color:#22417f">2 overdue &gt; 48 h</div></div>
+              <div style="background:#a8e0c5;border-radius:16px;padding:16px 17px"><div style="font-size:11.5px;font-weight:700;color:#1c6247;text-transform:uppercase;letter-spacing:.4px">Improving</div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.15;color:#1b2559">9</div><div style="font-size:11.5px;color:#1c6247">median −18% area</div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #e8e9f4;border-radius:18px;overflow:hidden">
+              <div style="display:grid;grid-template-columns:2fr 1.3fr 1fr 1fr 1fr;gap:10px;padding:13px 18px;background:#f1f2fa;font-size:11px;font-weight:700;color:#6b7299;text-transform:uppercase;letter-spacing:.5px"><span>Patient</span><span>Wound</span><span>Last check-in</span><span>Trend</span><span>Status</span></div>
+              <sc-for list="{{ rowsA }}" as="r" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:2fr 1.3fr 1fr 1fr 1fr;gap:10px;padding:14px 18px;align-items:center;border-top:1px solid #f0f1f8">
+                  <div style="display:flex;align-items:center;gap:11px;min-width:0"><div style="width:34px;height:34px;flex:none;border-radius:11px;background:#eef0fb;display:grid;place-items:center;font-size:12px;font-weight:700;color:#3b5bdb">{{ r.ini }}</div><div style="min-width:0;line-height:1.3"><div style="font-size:13.5px;font-weight:700;white-space:nowrap">{{ r.name }}</div><div style="font-size:11.5px;color:#8b91b4">{{ r.mrn }}</div></div></div>
+                  <div style="font-size:12.5px;color:#4b5280">{{ r.wound }}</div>
+                  <div style="font-size:12.5px;color:#4b5280">{{ r.last }}</div>
+                  <div style="font-size:12.5px;font-family:'IBM Plex Mono',monospace;color:#4b5280">{{ r.trend }}</div>
+                  <div><span style="display:inline-block;padding:5px 11px;border-radius:9px;font-size:11.5px;font-weight:700;background:{{ r.bg }};color:{{ r.fg }}">{{ r.status }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="1b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-grid;place-items:center;min-width:30px;height:26px;padding:0 9px;border-radius:8px;background:#1b2559;color:#fff;font-size:12.5px;font-weight:700;font-family:'IBM Plex Mono',monospace">1b</span>
+        <span style="font-size:16px;font-weight:700">Indigo Canvas</span>
+        <span style="font-size:13px;color:#5b6390">tinted page, white cards, one saturated accent per state</span>
+      </div>
+      <div style="width:1180px;height:760px;border-radius:22px;overflow:hidden;background:#f4f6fd;box-shadow:0 24px 60px rgba(27,37,89,.14);display:flex">
+        <aside style="width:212px;flex:none;background:#fff;border-right:1px solid #e4e8f6;display:flex;flex-direction:column;padding:20px 14px;gap:22px">
+          <div style="display:flex;align-items:center;gap:9px;padding:0 6px">
+            <div style="width:28px;height:28px;border-radius:50%;background:#3b5bdb;position:relative"><div style="position:absolute;inset:8px;border-radius:50% 40% 55% 45%;background:#f7cbda"></div></div>
+            <div style="line-height:1.15"><div style="font-size:15px;font-weight:800">WoundTrack</div><div style="font-size:10px;color:#8b91b4;font-weight:500">Riyadh Wound Clinic</div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="height:38px;border-radius:19px;background:#3b5bdb;color:#fff;display:flex;align-items:center;padding:0 15px;font-size:13.5px;font-weight:700">Patients</div>
+            <div style="height:38px;border-radius:19px;display:flex;align-items:center;padding:0 15px;font-size:13.5px;font-weight:500;color:#5b6390">Check-ins</div>
+            <div style="height:38px;border-radius:19px;display:flex;align-items:center;padding:0 15px;font-size:13.5px;font-weight:500;color:#5b6390">Alerts <span style="margin-left:auto;background:#ff5470;color:#fff;font-size:11px;font-weight:700;border-radius:7px;padding:1px 7px">2</span></div>
+            <div style="height:38px;border-radius:19px;display:flex;align-items:center;padding:0 15px;font-size:13.5px;font-weight:500;color:#5b6390">Reports</div>
+          </div>
+          <div style="margin-top:auto;background:#eef2ff;border-radius:16px;padding:14px">
+            <div style="font-size:11.5px;font-weight:700;color:#3b5bdb">AI pilot on</div>
+            <div style="font-size:11.5px;line-height:1.45;color:#5b6390;margin-top:3px">Measurements pre-filled, clinician confirms.</div>
+          </div>
+        </aside>
+        <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+          <header style="height:62px;flex:none;display:flex;align-items:center;gap:12px;padding:0 26px;background:#fff;border-bottom:1px solid #e4e8f6">
+            <div style="font-size:13px;color:#8b91b4">Patients</div>
+            <div style="flex:1"></div>
+            <div style="display:flex;align-items:center;gap:9px;height:36px;padding:0 15px;background:#f4f6fd;border-radius:18px;width:260px;font-size:12.5px;color:#8b91b4">Search patients, MRN, wound ID</div>
+            <div style="width:36px;height:36px;border-radius:50%;background:#3b5bdb;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff">NA</div>
+          </header>
+          <div style="flex:1;overflow:hidden;padding:24px 26px;display:flex;flex-direction:column;gap:18px">
+            <div style="display:flex;align-items:flex-end;gap:14px">
+              <div><h2 style="margin:0 0 4px;font-size:27px;font-weight:800;letter-spacing:-.7px">Patients</h2><p style="margin:0;font-size:13px;color:#8b91b4">18 active wounds · triage refreshed 4 min ago</p></div>
+              <div style="flex:1"></div>
+              <button style="height:40px;padding:0 17px;border-radius:20px;border:1.5px solid #d9e0f7;background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:#1b2559;cursor:pointer">Add patient</button>
+              <button style="height:40px;padding:0 19px;border-radius:20px;border:none;background:#3b5bdb;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">New check-in</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+              <div style="background:#fff;border-radius:18px;padding:16px 17px;border-left:0;box-shadow:0 2px 10px rgba(27,37,89,.05)"><div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:#ff5470"></span><span style="font-size:11.5px;font-weight:700;color:#8b91b4;text-transform:uppercase;letter-spacing:.4px">Urgent</span></div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.2;color:#ff5470">2</div><div style="font-size:11.5px;color:#8b91b4">oldest unack 41 min</div></div>
+              <div style="background:#fff;border-radius:18px;padding:16px 17px;box-shadow:0 2px 10px rgba(27,37,89,.05)"><div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:#f2b705"></span><span style="font-size:11.5px;font-weight:700;color:#8b91b4;text-transform:uppercase;letter-spacing:.4px">Needs review</span></div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.2;color:#c98a00">5</div><div style="font-size:11.5px;color:#8b91b4">SLA 24 h · 1 due today</div></div>
+              <div style="background:#fff;border-radius:18px;padding:16px 17px;box-shadow:0 2px 10px rgba(27,37,89,.05)"><div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:#3b5bdb"></span><span style="font-size:11.5px;font-weight:700;color:#8b91b4;text-transform:uppercase;letter-spacing:.4px">Check-ins due</span></div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.2;color:#3b5bdb">7</div><div style="font-size:11.5px;color:#8b91b4">2 overdue &gt; 48 h</div></div>
+              <div style="background:#fff;border-radius:18px;padding:16px 17px;box-shadow:0 2px 10px rgba(27,37,89,.05)"><div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:#12a56f"></span><span style="font-size:11.5px;font-weight:700;color:#8b91b4;text-transform:uppercase;letter-spacing:.4px">Improving</span></div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.2;color:#12a56f">9</div><div style="font-size:11.5px;color:#8b91b4">median −18% area</div></div>
+            </div>
+            <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 10px rgba(27,37,89,.05)">
+              <div style="display:grid;grid-template-columns:2fr 1.3fr 1fr 1fr 1fr;gap:10px;padding:13px 18px;font-size:11px;font-weight:700;color:#8b91b4;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #eef1fa"><span>Patient</span><span>Wound</span><span>Last check-in</span><span>Trend</span><span>Status</span></div>
+              <sc-for list="{{ rowsB }}" as="r" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:2fr 1.3fr 1fr 1fr 1fr;gap:10px;padding:14px 18px;align-items:center;border-bottom:1px solid #f4f6fd">
+                  <div style="display:flex;align-items:center;gap:11px;min-width:0"><div style="width:34px;height:34px;flex:none;border-radius:50%;background:{{ r.av }};display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff">{{ r.ini }}</div><div style="min-width:0;line-height:1.3"><div style="font-size:13.5px;font-weight:700;white-space:nowrap">{{ r.name }}</div><div style="font-size:11.5px;color:#8b91b4">{{ r.mrn }}</div></div></div>
+                  <div style="font-size:12.5px;color:#4b5280">{{ r.wound }}</div>
+                  <div style="font-size:12.5px;color:#4b5280">{{ r.last }}</div>
+                  <div style="font-size:12.5px;font-family:'IBM Plex Mono',monospace;color:#4b5280">{{ r.trend }}</div>
+                  <div><span style="display:inline-block;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;background:{{ r.bg }};color:{{ r.fg }}">{{ r.status }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="1c" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-grid;place-items:center;min-width:30px;height:26px;padding:0 9px;border-radius:8px;background:#1b2559;color:#fff;font-size:12.5px;font-weight:700;font-family:'IBM Plex Mono',monospace">1c</span>
+        <span style="font-size:16px;font-weight:700">Aurora Wash</span>
+        <span style="font-size:13px;color:#5b6390">soft spectrum gradients, airy cards, colour as light</span>
+      </div>
+      <div style="width:1180px;height:760px;border-radius:22px;overflow:hidden;box-shadow:0 24px 60px rgba(27,37,89,.14);display:flex;background:linear-gradient(135deg,#fbf7ff 0%,#f3f8ff 45%,#f2fbf7 100%)">
+        <aside style="width:212px;flex:none;background:rgba(255,255,255,.72);border-right:1px solid rgba(120,130,190,.14);display:flex;flex-direction:column;padding:20px 14px;gap:22px;backdrop-filter:blur(8px)">
+          <div style="display:flex;align-items:center;gap:9px;padding:0 6px">
+            <div style="width:28px;height:28px;border-radius:10px;background:linear-gradient(135deg,#a78bfa,#5eead4);position:relative"><div style="position:absolute;inset:8px;border-radius:50% 40% 55% 45%;background:rgba(255,255,255,.85)"></div></div>
+            <div style="line-height:1.15"><div style="font-size:15px;font-weight:800">WoundTrack</div><div style="font-size:10px;color:#8b91b4;font-weight:500">Riyadh Wound Clinic</div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="height:38px;border-radius:12px;background:linear-gradient(120deg,#ede9fe,#dbfbf1);color:#3d3080;display:flex;align-items:center;padding:0 14px;font-size:13.5px;font-weight:700">Patients</div>
+            <div style="height:38px;border-radius:12px;display:flex;align-items:center;padding:0 14px;font-size:13.5px;font-weight:500;color:#6b7299">Check-ins</div>
+            <div style="height:38px;border-radius:12px;display:flex;align-items:center;padding:0 14px;font-size:13.5px;font-weight:500;color:#6b7299">Alerts <span style="margin-left:auto;background:#fb7185;color:#fff;font-size:11px;font-weight:700;border-radius:7px;padding:1px 7px">2</span></div>
+            <div style="height:38px;border-radius:12px;display:flex;align-items:center;padding:0 14px;font-size:13.5px;font-weight:500;color:#6b7299">Reports</div>
+          </div>
+          <div style="margin-top:auto;background:linear-gradient(140deg,#f5f0ff,#e8fbf5);border-radius:16px;padding:14px">
+            <div style="font-size:11.5px;font-weight:700;color:#6d4bd8">AI pilot on</div>
+            <div style="font-size:11.5px;line-height:1.45;color:#6b7299;margin-top:3px">Measurements pre-filled, clinician confirms.</div>
+          </div>
+        </aside>
+        <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+          <header style="height:62px;flex:none;display:flex;align-items:center;gap:12px;padding:0 26px;border-bottom:1px solid rgba(120,130,190,.12)">
+            <div style="font-size:13px;color:#8b91b4">Patients</div>
+            <div style="flex:1"></div>
+            <div style="display:flex;align-items:center;gap:9px;height:36px;padding:0 15px;background:rgba(255,255,255,.8);border:1px solid rgba(120,130,190,.16);border-radius:12px;width:260px;font-size:12.5px;color:#8b91b4">Search patients, MRN, wound ID</div>
+            <div style="width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#c4b5fd,#99f6e4);display:grid;place-items:center;font-size:12px;font-weight:700;color:#3d3080">NA</div>
+          </header>
+          <div style="flex:1;overflow:hidden;padding:24px 26px;display:flex;flex-direction:column;gap:18px">
+            <div style="display:flex;align-items:flex-end;gap:14px">
+              <div><h2 style="margin:0 0 4px;font-size:27px;font-weight:800;letter-spacing:-.7px">Patients</h2><p style="margin:0;font-size:13px;color:#8b91b4">18 active wounds · triage refreshed 4 min ago</p></div>
+              <div style="flex:1"></div>
+              <button style="height:40px;padding:0 17px;border-radius:13px;border:1px solid rgba(120,130,190,.22);background:rgba(255,255,255,.8);font-family:inherit;font-size:13px;font-weight:600;color:#1b2559;cursor:pointer">Add patient</button>
+              <button style="height:40px;padding:0 19px;border-radius:13px;border:none;background:linear-gradient(120deg,#7c5cf5,#2fb8a4);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">New check-in</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+              <div style="background:linear-gradient(150deg,#fff1f4,#ffffff);border:1px solid rgba(251,113,133,.22);border-radius:18px;padding:16px 17px"><div style="font-size:11.5px;font-weight:700;color:#be3455;text-transform:uppercase;letter-spacing:.4px">Urgent</div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.2">2</div><div style="font-size:11.5px;color:#8b91b4">oldest unack 41 min</div></div>
+              <div style="background:linear-gradient(150deg,#fff8e8,#ffffff);border:1px solid rgba(242,183,5,.26);border-radius:18px;padding:16px 17px"><div style="font-size:11.5px;font-weight:700;color:#a3730a;text-transform:uppercase;letter-spacing:.4px">Needs review</div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.2">5</div><div style="font-size:11.5px;color:#8b91b4">SLA 24 h · 1 due today</div></div>
+              <div style="background:linear-gradient(150deg,#f1f0ff,#ffffff);border:1px solid rgba(124,92,245,.22);border-radius:18px;padding:16px 17px"><div style="font-size:11.5px;font-weight:700;color:#5a3fd0;text-transform:uppercase;letter-spacing:.4px">Check-ins due</div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.2">7</div><div style="font-size:11.5px;color:#8b91b4">2 overdue &gt; 48 h</div></div>
+              <div style="background:linear-gradient(150deg,#e9fbf5,#ffffff);border:1px solid rgba(47,184,164,.26);border-radius:18px;padding:16px 17px"><div style="font-size:11.5px;font-weight:700;color:#12806f;text-transform:uppercase;letter-spacing:.4px">Improving</div><div style="font-family:'IBM Plex Mono',monospace;font-size:34px;font-weight:600;line-height:1.2">9</div><div style="font-size:11.5px;color:#8b91b4">median −18% area</div></div>
+            </div>
+            <div style="background:rgba(255,255,255,.82);border:1px solid rgba(120,130,190,.14);border-radius:20px;overflow:hidden">
+              <div style="display:grid;grid-template-columns:2fr 1.3fr 1fr 1fr 1fr;gap:10px;padding:13px 18px;font-size:11px;font-weight:700;color:#8b91b4;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid rgba(120,130,190,.12)"><span>Patient</span><span>Wound</span><span>Last check-in</span><span>Trend</span><span>Status</span></div>
+              <sc-for list="{{ rowsC }}" as="r" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:2fr 1.3fr 1fr 1fr 1fr;gap:10px;padding:14px 18px;align-items:center;border-bottom:1px solid rgba(120,130,190,.09)">
+                  <div style="display:flex;align-items:center;gap:11px;min-width:0"><div style="width:34px;height:34px;flex:none;border-radius:12px;background:{{ r.av }};display:grid;place-items:center;font-size:12px;font-weight:700;color:#3d3080">{{ r.ini }}</div><div style="min-width:0;line-height:1.3"><div style="font-size:13.5px;font-weight:700;white-space:nowrap">{{ r.name }}</div><div style="font-size:11.5px;color:#8b91b4">{{ r.mrn }}</div></div></div>
+                  <div style="font-size:12.5px;color:#4b5280">{{ r.wound }}</div>
+                  <div style="font-size:12.5px;color:#4b5280">{{ r.last }}</div>
+                  <div style="font-size:12.5px;font-family:'IBM Plex Mono',monospace;color:#4b5280">{{ r.trend }}</div>
+                  <div><span style="display:inline-block;padding:5px 12px;border-radius:11px;font-size:11.5px;font-weight:700;background:{{ r.bg }};color:{{ r.fg }}">{{ r.status }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const BASE = [
+  {ini:"AA", name:"Amal Al-Harbi", mrn:"MRN 40219 · 62 F", wound:"DFU · left heel", last:"Today 08:14", trend:"−12%", status:"Urgent", k:"urgent"},
+  {ini:"RM", name:"Rashid Al-Mutairi", mrn:"MRN 40877 · 71 M", wound:"Venous · right shin", last:"Yesterday", trend:"−4%", status:"Needs review", k:"review"},
+  {ini:"SK", name:"Sara Khalil", mrn:"MRN 41302 · 48 F", wound:"Pressure · sacrum", last:"2 days ago", trend:"+3%", status:"Needs review", k:"review"},
+  {ini:"FZ", name:"Fahad Al-Zahrani", mrn:"MRN 39114 · 55 M", wound:"Surgical · abdomen", last:"Today 07:02", trend:"−21%", status:"Improving", k:"good"},
+  {ini:"NH", name:"Noura Hamdan", mrn:"MRN 41560 · 67 F", wound:"DFU · right toe", last:"3 days ago", trend:"−9%", status:"Due", k:"due"},
+];
+const THEMES = {
+  A: {urgent:["#f7cbda","#8f2f4d"], review:["#f7ec9e","#7a5c00"], good:["#a8e0c5","#1c6247"], due:["#dfe6fb","#33447f"], av:[]},
+  B: {urgent:["#ffe5ea","#d81f45"], review:["#fff2d1","#a37102"], good:["#dcf7ec","#0e7f58"], due:["#e6ecff","#3b5bdb"], av:["#3b5bdb","#7c5cf5","#f2618a","#12a56f","#f2a705"]},
+  C: {urgent:["#ffeaef","#be3455"], review:["#fff6e0","#a3730a"], good:["#e6fbf3","#12806f"], due:["#efedff","#5a3fd0"], av:["#ddd6fe","#bbf7e6","#fbcfe8","#c7d9fe","#fde8b0"]},
+};
+function build(key) {
+  const t = THEMES[key];
+  return BASE.map((r, i) => ({...r, bg: t[r.k][0], fg: t[r.k][1], av: t.av.length ? t.av[i % t.av.length] : "#eef0fb"}));
+}
+class Component extends DCLogic {
+  renderVals() {
+    return { rowsA: build("A"), rowsB: build("B"), rowsC: build("C") };
+  }
+}
+
+</script>
+</body>
+</html>

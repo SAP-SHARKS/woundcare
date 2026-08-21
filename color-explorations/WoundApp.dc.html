@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</helmet>
+<div style="width:100%;height:100%;display:flex;overflow:hidden;font-family:'Plus Jakarta Sans',Helvetica,sans-serif;background:{{ t.page }};color:{{ t.ink }}">
+
+  <aside style="width:230px;flex:none;background:{{ t.card }};border-right:1px solid {{ t.faint }};display:flex;flex-direction:column;padding:18px 13px;gap:18px">
+    <div style="display:flex;align-items:center;gap:9px;padding:2px 6px 0">
+      <div style="width:30px;height:30px;flex:none;border-radius:10px;background:{{ t.logoBg }};display:grid;place-items:center">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{ t.logoFg }}" stroke-width="2.1" stroke-linecap="round"><path d="M12 21s-7-4.6-7-10a4.4 4.4 0 0 1 7-3.4A4.4 4.4 0 0 1 19 11c0 5.4-7 10-7 10z"></path><path d="M9 12h2l1.2-2.4L14 14l1-2h1"></path></svg>
+      </div>
+      <div style="line-height:1.2">
+        <div style="font-size:15px;font-weight:800;letter-spacing:-.2px">WoundTrack</div>
+        <div style="font-size:10.5px;font-weight:500;color:{{ t.muted }}">Riyadh Wound Clinic</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <button onClick="{{ nav.patients.go }}" style="display:flex;align-items:center;gap:10px;text-align:left;border:none;cursor:pointer;font-family:inherit;padding:9px 10px;border-radius:13px;background:{{ nav.patients.bg }}">
+        <span style="width:30px;height:30px;flex:none;border-radius:9px;background:{{ nav.patients.chip }};display:grid;place-items:center;color:{{ nav.patients.icon }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"></path><path d="M16.5 6.6a3 3 0 0 1 0 5.8M18 18.9c-.2-1.6-.7-2.9-1.5-3.9 2.4.2 4 2 4.4 3.9z"></path></svg>
+        </span>
+        <span style="min-width:0;line-height:1.25">
+          <span style="display:block;font-size:13.5px;font-weight:700;color:{{ nav.patients.fg }}">Patients</span>
+          <span style="display:block;font-size:10.5px;font-weight:500;color:{{ nav.patients.sub }}">18 active wounds</span>
+        </span>
+      </button>
+      <button onClick="{{ nav.checkins.go }}" style="display:flex;align-items:center;gap:10px;text-align:left;border:none;cursor:pointer;font-family:inherit;padding:9px 10px;border-radius:13px;background:{{ nav.checkins.bg }}">
+        <span style="width:30px;height:30px;flex:none;border-radius:9px;background:{{ nav.checkins.chip }};display:grid;place-items:center;color:{{ nav.checkins.icon }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5.5" width="18" height="13" rx="3"></rect><circle cx="12" cy="12" r="3.2"></circle><path d="M8.5 5.5 9.6 3h4.8l1.1 2.5"></path></svg>
+        </span>
+        <span style="min-width:0;line-height:1.25">
+          <span style="display:block;font-size:13.5px;font-weight:700;color:{{ nav.checkins.fg }}">Check-ins</span>
+          <span style="display:block;font-size:10.5px;font-weight:500;color:{{ nav.checkins.sub }}">7 due · 2 overdue</span>
+        </span>
+      </button>
+      <button onClick="{{ nav.alerts.go }}" style="display:flex;align-items:center;gap:10px;text-align:left;border:none;cursor:pointer;font-family:inherit;padding:9px 10px;border-radius:13px;background:{{ nav.alerts.bg }}">
+        <span style="width:30px;height:30px;flex:none;border-radius:9px;background:{{ nav.alerts.chip }};display:grid;place-items:center;color:{{ nav.alerts.icon }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 10a6 6 0 0 1 12 0c0 4 1.4 5.5 1.4 5.5H4.6S6 14 6 10z"></path><path d="M10 19a2 2 0 0 0 4 0"></path></svg>
+        </span>
+        <span style="min-width:0;line-height:1.25">
+          <span style="display:block;font-size:13.5px;font-weight:700;color:{{ nav.alerts.fg }}">Alerts</span>
+          <span style="display:block;font-size:10.5px;font-weight:500;color:{{ nav.alerts.sub }}">{{ openAlertLabel }}</span>
+        </span>
+        <span style="margin-left:auto;flex:none;background:{{ t.urgent }};color:#fff;font-size:10.5px;font-weight:700;border-radius:8px;padding:2px 7px;font-family:'IBM Plex Mono',monospace">{{ openAlerts }}</span>
+      </button>
+      <button onClick="{{ nav.reports.go }}" style="display:flex;align-items:center;gap:10px;text-align:left;border:none;cursor:pointer;font-family:inherit;padding:9px 10px;border-radius:13px;background:{{ nav.reports.bg }}">
+        <span style="width:30px;height:30px;flex:none;border-radius:9px;background:{{ nav.reports.chip }};display:grid;place-items:center;color:{{ nav.reports.icon }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="M8 15.5V11M12.5 15.5V7.5M17 15.5v-5"></path></svg>
+        </span>
+        <span style="min-width:0;line-height:1.25">
+          <span style="display:block;font-size:13.5px;font-weight:700;color:{{ nav.reports.fg }}">Reports</span>
+          <span style="display:block;font-size:10.5px;font-weight:500;color:{{ nav.reports.sub }}">Healing outcomes</span>
+        </span>
+      </button>
+    </div>
+
+    <div style="margin-top:auto;border-radius:14px;padding:12px 13px;background:{{ t.soft }};border:1px solid {{ t.faint }}">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:{{ t.goodFg }}">
+        <span style="width:7px;height:7px;border-radius:50%;background:{{ t.good }}"></span>AI pilot on
+      </div>
+      <div style="font-size:11px;line-height:1.45;color:{{ t.muted }};margin-top:4px">Measurements pre-filled. A clinician confirms every value.</div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header style="height:58px;flex:none;display:flex;align-items:center;gap:11px;padding:0 24px;background:{{ t.card }};border-bottom:1px solid {{ t.faint }}">
+      <span style="font-size:12.5px;font-weight:600;color:{{ t.muted }}">{{ crumb }}</span>
+      <span style="flex:1"></span>
+      <span style="display:flex;align-items:center;gap:8px;height:34px;padding:0 13px;background:{{ t.soft }};border-radius:11px;width:230px;font-size:12px;color:{{ t.muted }}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+        Search patients, MRN, wound ID
+      </span>
+      <span style="width:34px;height:34px;border-radius:11px;background:{{ t.avatarBg }};display:grid;place-items:center;font-size:11.5px;font-weight:700;color:{{ t.avatarFg }}">NA</span>
+    </header>
+
+    <div style="flex:1;overflow:auto;padding:22px 24px 26px">
+
+      <sc-if value="{{ showRoster }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:flex-end;gap:12px">
+            <div>
+              <h2 style="margin:0 0 3px;font-size:25px;font-weight:800;letter-spacing:-.6px">{{ rosterTitle }}</h2>
+              <p style="margin:0;font-size:12.5px;color:{{ t.muted }}">{{ rosterSub }}</p>
+            </div>
+            <span style="flex:1"></span>
+            <sc-if value="{{ filterOn }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ clearFilter }}" style="height:36px;padding:0 14px;border-radius:11px;border:1px solid {{ t.urgent }};background:{{ t.urgentBg }};color:{{ t.urgentFg }};font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">Clear filter ×</button>
+            </sc-if>
+            <button style="height:36px;padding:0 15px;border-radius:11px;border:1px solid {{ t.faint }};background:{{ t.card }};font-family:inherit;font-size:12.5px;font-weight:600;color:{{ t.ink }};cursor:pointer;white-space:nowrap">Add patient</button>
+            <button style="height:36px;padding:0 16px;border-radius:11px;border:none;background:{{ t.primary }};color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">New check-in</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+            <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+              <button onClick="{{ k.go }}" style="text-align:left;cursor:pointer;font-family:inherit;background:{{ k.bg }};border:1.5px solid {{ k.border }};border-radius:16px;padding:13px 15px;display:flex;flex-direction:column;gap:2px">
+                <span style="display:flex;align-items:center;gap:7px">
+                  <span style="width:8px;height:8px;border-radius:50%;background:{{ k.dot }}"></span>
+                  <span style="font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:{{ k.fg }}">{{ k.label }}</span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;line-height:1.2;color:{{ k.fg }}">{{ k.value }}</span>
+                <span style="font-size:11px;color:{{ k.subFg }}">{{ k.sub }}</span>
+              </button>
+            </sc-for>
+          </div>
+
+          <div style="background:{{ t.card }};border:1px solid {{ t.faint }};border-radius:18px;overflow:hidden">
+            <div style="display:grid;grid-template-columns:2fr 1.3fr 1fr .8fr .9fr;gap:10px;padding:11px 17px;background:{{ t.soft }};font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:{{ t.muted }}">
+              <span>Patient</span><span>Wound</span><span>Last check-in</span><span>Trend</span><span>Status</span>
+            </div>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+              <div onClick="{{ r.go }}" style="display:grid;grid-template-columns:2fr 1.3fr 1fr .8fr .9fr;gap:10px;padding:12px 17px;align-items:center;border-top:1px solid {{ t.faint }};cursor:pointer" style-hover="background:{{ t.soft }}">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                  <div style="width:32px;height:32px;flex:none;border-radius:10px;background:{{ r.avBg }};display:grid;place-items:center;font-size:11.5px;font-weight:700;color:{{ r.avFg }}">{{ r.ini }}</div>
+                  <div style="min-width:0;line-height:1.3">
+                    <div style="font-size:13px;font-weight:700;white-space:nowrap;text-decoration:underline;text-decoration-color:{{ t.faint }};text-underline-offset:3px">{{ r.name }}</div>
+                    <div style="font-size:11px;color:{{ t.muted }}">{{ r.mrn }}</div>
+                  </div>
+                </div>
+                <div style="font-size:12px;color:{{ t.body }}">{{ r.wound }}</div>
+                <div style="font-size:12px;color:{{ t.body }}">{{ r.last }}</div>
+                <div style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:{{ r.trendFg }}">{{ r.trend }}</div>
+                <div><span style="display:inline-block;padding:4px 10px;border-radius:9px;font-size:11px;font-weight:700;background:{{ r.sBg }};color:{{ r.sFg }}">{{ r.status }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showPatient }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <button onClick="{{ back }}" style="align-self:flex-start;display:flex;align-items:center;gap:6px;border:none;background:none;padding:0;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;color:{{ t.primary }}">← Back to patients</button>
+          <div style="display:flex;align-items:center;gap:13px">
+            <div style="width:52px;height:52px;flex:none;border-radius:16px;background:{{ p.avBg }};display:grid;place-items:center;font-size:17px;font-weight:800;color:{{ p.avFg }}">{{ p.ini }}</div>
+            <div style="line-height:1.3">
+              <h2 style="margin:0;font-size:24px;font-weight:800;letter-spacing:-.6px">{{ p.name }}</h2>
+              <div style="font-size:12.5px;color:{{ t.muted }}">{{ p.mrn }} · {{ p.wound }} · wound ID {{ p.wid }}</div>
+            </div>
+            <span style="flex:1"></span>
+            <span style="padding:6px 12px;border-radius:10px;font-size:11.5px;font-weight:700;background:{{ p.sBg }};color:{{ p.sFg }}">{{ p.status }}</span>
+            <button style="height:38px;padding:0 16px;border-radius:11px;border:none;background:{{ t.primary }};color:#fff;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">Start check-in</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:14px;align-items:start">
+            <div style="background:{{ t.card }};border:1px solid {{ t.faint }};border-radius:18px;padding:16px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <span style="font-size:13px;font-weight:700">Latest capture</span>
+                <span style="font-size:11px;color:{{ t.muted }}">{{ p.last }} · nurse N. Amin</span>
+              </div>
+              <div style="height:196px;border-radius:14px;background:{{ t.soft }};border:1px solid {{ t.faint }};position:relative;overflow:hidden">
+                <div style="position:absolute;left:26%;top:22%;width:44%;height:52%;border-radius:56% 44% 48% 60%;background:{{ t.woundOuter }}"></div>
+                <div style="position:absolute;left:34%;top:32%;width:26%;height:30%;border-radius:52% 60% 44% 50%;background:{{ t.woundInner }}"></div>
+                <div style="position:absolute;left:14px;bottom:12px;display:flex;gap:6px">
+                  <span style="padding:3px 9px;border-radius:8px;background:{{ t.card }};border:1px solid {{ t.faint }};font-size:10.5px;font-weight:700;color:{{ t.body }}">Scale marker found</span>
+                  <span style="padding:3px 9px;border-radius:8px;background:{{ t.goodBg }};font-size:10.5px;font-weight:700;color:{{ t.goodFg }}">Quality pass</span>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:13px">
+                <sc-for list="{{ p.metrics }}" as="m" hint-placeholder-count="4">
+                  <div style="border:1px solid {{ t.faint }};border-radius:12px;padding:9px 10px;min-width:0">
+                    <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:{{ t.muted }}">{{ m.label }}</div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;white-space:nowrap">{{ m.value }}</div>
+                    <div style="font-size:10.5px;color:{{ t.muted }}">AI {{ m.conf }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="background:{{ t.card }};border:1px solid {{ t.faint }};border-radius:18px;padding:16px">
+                <div style="font-size:13px;font-weight:700;margin-bottom:10px">Severity &amp; triage</div>
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px">
+                  <div style="width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:{{ p.sBg }};color:{{ p.sFg }};font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600">{{ p.score }}</div>
+                  <div style="font-size:12px;line-height:1.5;color:{{ t.body }}">{{ p.rule }}</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <sc-for list="{{ p.trace }}" as="x" hint-placeholder-count="3">
+                    <div style="display:flex;gap:8px;font-size:11.5px;color:{{ t.body }};align-items:flex-start">
+                      <span style="width:6px;height:6px;border-radius:50%;background:{{ t.primary }};margin-top:5px;flex:none"></span>{{ x }}
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="background:{{ t.card }};border:1px solid {{ t.faint }};border-radius:18px;padding:16px">
+                <div style="font-size:13px;font-weight:700;margin-bottom:12px">Area trend · 5 visits</div>
+                <div style="display:flex;align-items:flex-end;gap:12px;height:96px">
+                  <sc-for list="{{ p.trendBars }}" as="b" hint-placeholder-count="5">
+                    <div style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px">
+                      <div style="width:100%;border-radius:8px 8px 4px 4px;background:{{ b.color }};height:{{ b.h }}"></div>
+                      <span style="font-size:10px;color:{{ t.muted }}">{{ b.label }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showCheckins }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div>
+            <h2 style="margin:0 0 3px;font-size:25px;font-weight:800;letter-spacing:-.6px">Check-ins</h2>
+            <p style="margin:0;font-size:12.5px;color:{{ t.muted }}">7 due this week · 2 overdue beyond 48 h</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ checkins }}" as="c" hint-placeholder-count="5">
+              <div onClick="{{ c.go }}" style="background:{{ t.card }};border:1px solid {{ t.faint }};border-left:4px solid {{ c.accent }};border-radius:16px;padding:13px 16px;display:flex;align-items:center;gap:14px;cursor:pointer">
+                <div style="width:34px;height:34px;flex:none;border-radius:11px;background:{{ c.avBg }};display:grid;place-items:center;font-size:11.5px;font-weight:700;color:{{ c.avFg }}">{{ c.ini }}</div>
+                <div style="min-width:0;line-height:1.35">
+                  <div style="font-size:13px;font-weight:700">{{ c.name }}</div>
+                  <div style="font-size:11.5px;color:{{ t.muted }}">{{ c.detail }}</div>
+                </div>
+                <span style="flex:1"></span>
+                <span style="font-size:11.5px;font-family:'IBM Plex Mono',monospace;color:{{ t.body }}">{{ c.when }}</span>
+                <span style="padding:4px 11px;border-radius:9px;font-size:11px;font-weight:700;background:{{ c.bg }};color:{{ c.fg }}">{{ c.state }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showAlerts }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div>
+            <h2 style="margin:0 0 3px;font-size:25px;font-weight:800;letter-spacing:-.6px">Alerts</h2>
+            <p style="margin:0;font-size:12.5px;color:{{ t.muted }}">Red is reserved for unacknowledged escalations — nothing else in the palette uses it.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:11px">
+            <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="3">
+              <div style="background:{{ a.cardBg }};border:1px solid {{ a.border }};border-radius:16px;padding:14px 16px;display:flex;align-items:flex-start;gap:13px">
+                <div style="width:32px;height:32px;flex:none;border-radius:10px;background:{{ a.iconBg }};color:{{ a.iconFg }};display:grid;place-items:center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 4.5 21 19H3z"></path><path d="M12 10v4M12 16.6v.1"></path></svg>
+                </div>
+                <div style="min-width:0;line-height:1.4">
+                  <div style="font-size:13px;font-weight:700;color:{{ a.titleFg }}">{{ a.title }}</div>
+                  <div style="font-size:11.5px;color:{{ t.body }};margin-top:2px">{{ a.body }}</div>
+                  <div style="font-size:10.5px;color:{{ t.muted }};margin-top:4px;font-family:'IBM Plex Mono',monospace">{{ a.meta }}</div>
+                </div>
+                <span style="flex:1"></span>
+                <button onClick="{{ a.act }}" style="flex:none;height:34px;padding:0 14px;border-radius:10px;border:1px solid {{ a.btnBorder }};background:{{ a.btnBg }};color:{{ a.btnFg }};font-family:inherit;font-size:12px;font-weight:700;cursor:{{ a.cursor }}">{{ a.btn }}</button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showReports }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div>
+            <h2 style="margin:0 0 3px;font-size:25px;font-weight:800;letter-spacing:-.6px">Reports</h2>
+            <p style="margin:0;font-size:12.5px;color:{{ t.muted }}">Rolling 90 days · clinic-wide</p>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <sc-for list="{{ reportStats }}" as="s" hint-placeholder-count="3">
+              <div style="background:{{ t.card }};border:1px solid {{ t.faint }};border-radius:16px;padding:14px 16px">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:{{ t.muted }}">{{ s.label }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;color:{{ s.fg }}">{{ s.value }}</div>
+                <div style="font-size:11px;color:{{ t.muted }}">{{ s.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:{{ t.card }};border:1px solid {{ t.faint }};border-radius:18px;padding:16px 18px">
+            <div style="font-size:13px;font-weight:700;margin-bottom:14px">Median area reduction by wound type</div>
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <sc-for list="{{ reportBars }}" as="b" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <span style="width:130px;flex:none;font-size:12px;color:{{ t.body }}">{{ b.label }}</span>
+                  <span style="flex:1;height:12px;border-radius:8px;background:{{ t.soft }};position:relative;overflow:hidden">
+                    <span style="position:absolute;left:0;top:0;bottom:0;width:{{ b.w }};border-radius:8px;background:{{ b.color }}"></span>
+                  </span>
+                  <span style="width:52px;text-align:right;font-size:12px;font-family:'IBM Plex Mono',monospace">{{ b.value }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:760},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;cobalt&quot;,&quot;citrus&quot;,&quot;sage&quot;],&quot;default&quot;:&quot;cobalt&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const THEMES = {
+  cobalt: {
+    page:"#f4f6fb", card:"#ffffff", ink:"#101c40", body:"#464f74", muted:"#7b84a6", faint:"#e6e9f5", soft:"#f1f4fc",
+    primary:"#3f5bd9", logoBg:"#e9edfd", logoFg:"#3f5bd9", avatarBg:"#e9edfd", avatarFg:"#3f5bd9",
+    urgent:"#e0333f", urgentBg:"#fdeaec", urgentFg:"#b21f2b",
+    warn:"#c8871a", warnBg:"#fdf3e0", warnFg:"#8a5d08",
+    good:"#0f9c86", goodBg:"#e3f7f3", goodFg:"#0a6d5e",
+    due:"#3f5bd9", dueBg:"#eaeefd", dueFg:"#2c3fa8",
+    woundOuter:"#f3ccc4", woundInner:"#d98a7c",
+    nav:{patients:["#3f5bd9","#e9edfd"], checkins:["#0f9c86","#e2f6f2"], alerts:["#8b46c9","#f1e9fc"], reports:["#c8871a","#fdf2df"]},
+    avs:[["#e9edfd","#3f5bd9"],["#e2f6f2","#0a6d5e"],["#f1e9fc","#7b39b8"],["#fdf2df","#8a5d08"],["#fdeaec","#b21f2b"]],
+  },
+  citrus: {
+    page:"#f8f7f2", card:"#ffffff", ink:"#16202e", body:"#4a5464", muted:"#7a8391", faint:"#e8e6dd", soft:"#f2f0e8",
+    primary:"#1f4ed8", logoBg:"#e7ecfd", logoFg:"#1f4ed8", avatarBg:"#fdefe1", avatarFg:"#b45c11",
+    urgent:"#d42a22", urgentBg:"#fceae8", urgentFg:"#a11d17",
+    warn:"#c98207", warnBg:"#fdf2df", warnFg:"#8d5c04",
+    good:"#3f8f2f", goodBg:"#ebf5e6", goodFg:"#2b6720",
+    due:"#1f4ed8", dueBg:"#e8edfd", dueFg:"#1a3ba6",
+    woundOuter:"#f6d3c1", woundInner:"#d97a55",
+    nav:{patients:["#1f4ed8","#e7ecfd"], checkins:["#3f8f2f","#eaf5e5"], alerts:["#c23f7f","#fbe9f2"], reports:["#e07a1f","#fdefe1"]},
+    avs:[["#e7ecfd","#1a3ba6"],["#eaf5e5","#2b6720"],["#fbe9f2","#a32e66"],["#fdefe1","#b45c11"],["#fceae8","#a11d17"]],
+  },
+  sage: {
+    page:"#f5f3ed", card:"#fffefb", ink:"#22302b", body:"#4d5a53", muted:"#7d877f", faint:"#e6e3d9", soft:"#efece3",
+    primary:"#3c5a8a", logoBg:"#e8f1ea", logoFg:"#4d7c5f", avatarBg:"#e9eef6", avatarFg:"#2b4468",
+    urgent:"#c0392b", urgentBg:"#f8e8e5", urgentFg:"#96291d",
+    warn:"#a8801e", warnBg:"#f8f0da", warnFg:"#7a5c0f",
+    good:"#4d7c5f", goodBg:"#e9f1eb", goodFg:"#375c46",
+    due:"#3c5a8a", dueBg:"#e9eef6", dueFg:"#2b4468",
+    woundOuter:"#eed6c5", woundInner:"#c98a6d",
+    nav:{patients:["#3c5a8a","#e8edf5"], checkins:["#4d7c5f","#e8f1ea"], alerts:["#8a5a8f","#f2e9f3"], reports:["#a8801e","#f7efdb"]},
+    avs:[["#e8edf5","#2b4468"],["#e8f1ea","#375c46"],["#f2e9f3","#6f4574"],["#f7efdb","#7a5c0f"],["#f8e8e5","#96291d"]],
+  },
+};
+
+const PEOPLE = [
+  {id:"aa", ini:"AA", name:"Amal Al-Harbi", mrn:"MRN 40219 · 62 F", wound:"DFU · left heel", wid:"W-1182", last:"Today 08:14", trend:"−12%", status:"Urgent", k:"urgent", score:"7.4",
+   rule:"Rule DFU-3 fired: depth increase with new odour flag. Escalated to Dr. Saeed, response due in 4 h.",
+   trace:["Depth 0.9 → 1.4 cm across two visits","Nurse marked odour present","Area reduction stalled below 5% for 14 days"],
+   metrics:[{label:"Length",value:"4.2 cm",conf:"96%"},{label:"Width",value:"3.1 cm",conf:"94%"},{label:"Depth",value:"1.4 cm",conf:"81%"},{label:"Area",value:"10.2 cm²",conf:"93%"}],
+   bars:[62,58,52,66,74]},
+  {id:"rm", ini:"RM", name:"Rashid Al-Mutairi", mrn:"MRN 40877 · 71 M", wound:"Venous · right shin", wid:"W-0974", last:"Yesterday 16:40", trend:"−4%", status:"Needs review", k:"warn", score:"5.1",
+   rule:"Rule VLU-1 fired: slow healing trajectory. Queued for clinician review within 24 h.",
+   trace:["Area reduction 4% over 3 visits","Compression adherence self-reported as partial","No infection markers recorded"],
+   metrics:[{label:"Length",value:"6.8 cm",conf:"95%"},{label:"Width",value:"4.4 cm",conf:"92%"},{label:"Depth",value:"0.6 cm",conf:"78%"},{label:"Area",value:"21.4 cm²",conf:"91%"}],
+   bars:[80,76,72,70,68]},
+  {id:"sk", ini:"SK", name:"Sara Khalil", mrn:"MRN 41302 · 48 F", wound:"Pressure · sacrum", wid:"W-1240", last:"2 days ago", trend:"+3%", status:"Needs review", k:"warn", score:"5.8",
+   rule:"Rule PU-2 fired: area increased since last visit. Review before next dressing change.",
+   trace:["Area 12.1 → 12.5 cm²","Repositioning schedule logged 4 of 6 times","Moisture-related damage suspected"],
+   metrics:[{label:"Length",value:"4.9 cm",conf:"94%"},{label:"Width",value:"3.4 cm",conf:"93%"},{label:"Depth",value:"0.8 cm",conf:"76%"},{label:"Area",value:"12.5 cm²",conf:"90%"}],
+   bars:[54,56,58,60,62]},
+  {id:"fz", ini:"FZ", name:"Fahad Al-Zahrani", mrn:"MRN 39114 · 55 M", wound:"Surgical · abdomen", wid:"W-0811", last:"Today 07:02", trend:"−21%", status:"Improving", k:"good", score:"2.6",
+   rule:"No rule fired. Trajectory on track — next check-in in 5 days.",
+   trace:["Area down 21% in 14 days","Granulation coverage above 70%","No pain escalation reported"],
+   metrics:[{label:"Length",value:"3.1 cm",conf:"97%"},{label:"Width",value:"1.8 cm",conf:"96%"},{label:"Depth",value:"0.3 cm",conf:"85%"},{label:"Area",value:"4.4 cm²",conf:"95%"}],
+   bars:[78,66,54,44,34]},
+  {id:"nh", ini:"NH", name:"Noura Hamdan", mrn:"MRN 41560 · 67 F", wound:"DFU · right toe", wid:"W-1301", last:"3 days ago", trend:"−9%", status:"Due", k:"due", score:"4.2",
+   rule:"Check-in overdue by 18 h. Reminder sent to patient and caregiver.",
+   trace:["Last capture 3 days ago","Offloading footwear confirmed","No new photos received"],
+   metrics:[{label:"Length",value:"2.4 cm",conf:"93%"},{label:"Width",value:"2.0 cm",conf:"92%"},{label:"Depth",value:"0.5 cm",conf:"74%"},{label:"Area",value:"3.8 cm²",conf:"89%"}],
+   bars:[70,64,60,56,52]},
+];
+
+const ALERTS = [
+  {id:"a1", sev:"urgent", title:"Depth increase + odour flag — Amal Al-Harbi", body:"Rule DFU-3 escalated to Dr. Saeed. Response due in 4 h.", meta:"08:19 · unacknowledged 41 min"},
+  {id:"a2", sev:"urgent", title:"Capture quality failed twice — Noura Hamdan", body:"Patient-submitted photos rejected for blur. Nurse call-back queued.", meta:"07:58 · unacknowledged 62 min"},
+  {id:"a3", sev:"info", title:"Threshold changed — pressure ulcer area rule", body:"Clinic Admin raised the area-increase trigger from 2% to 4%. Effective next visit.", meta:"Yesterday 18:22 · acknowledged"},
+];
+
+const CHECKINS = [
+  {pid:"nh", detail:"DFU · right toe · overdue 18 h", when:"Due 3d ago", state:"Overdue", k:"urgent"},
+  {pid:"sk", detail:"Pressure · sacrum · dressing change", when:"Due today", state:"Due", k:"due"},
+  {pid:"aa", detail:"DFU · left heel · escalation follow-up", when:"Today 14:00", state:"Scheduled", k:"due"},
+  {pid:"rm", detail:"Venous · right shin · compression check", when:"Tomorrow", state:"Scheduled", k:"due"},
+  {pid:"fz", detail:"Surgical · abdomen · submitted 07:02", when:"Today", state:"Complete", k:"good"},
+];
+
+class Component extends DCLogic {
+  state = { tab:"patients", pid:null, filter:null, acked:[] };
+
+  st(t, k) {
+    const m = {urgent:[t.urgentBg,t.urgentFg], warn:[t.warnBg,t.warnFg], good:[t.goodBg,t.goodFg], due:[t.dueBg,t.dueFg]};
+    return m[k] || m.due;
+  }
+
+  renderVals() {
+    const t = THEMES[this.props.theme] || THEMES.cobalt;
+    const s = this.state;
+    const person = PEOPLE.find(p => p.id === s.pid);
+    const go = (tab) => () => this.setState({tab, pid:null, filter:null});
+
+    const navItem = (key, active) => {
+      const [c, bg] = t.nav[key];
+      return { go: go(key), bg: active ? bg : "transparent", chip: active ? "#ffffff" : t.soft,
+        icon: active ? c : t.muted, fg: active ? c : t.ink, sub: active ? c : t.muted };
+    };
+    const activeTab = s.tab;
+
+    const openAlerts = ALERTS.filter(a => a.sev === "urgent" && !s.acked.includes(a.id)).length;
+
+    const rows = PEOPLE.filter(p => !s.filter || p.k === s.filter).map((p, i) => {
+      const [bg, fg] = this.st(t, p.k);
+      const [avBg, avFg] = t.avs[i % t.avs.length];
+      return {...p, sBg:bg, sFg:fg, avBg, avFg,
+        trendFg: p.trend.charAt(0) === "+" ? t.urgentFg : t.goodFg,
+        go: () => this.setState({tab:"patients", pid:p.id})};
+    });
+
+    const kpiDefs = [
+      {label:"Urgent", value:"2", sub:"oldest unack 41 min", k:"urgent", filter:"urgent"},
+      {label:"Needs review", value:"5", sub:"SLA 24 h · 1 due today", k:"warn", filter:"warn"},
+      {label:"Check-ins due", value:"7", sub:"2 overdue > 48 h", k:"due", filter:null, tab:"checkins"},
+      {label:"Improving", value:"9", sub:"median −18% area", k:"good", filter:"good"},
+    ];
+    const kpis = kpiDefs.map(d => {
+      const [bg, fg] = this.st(t, d.k);
+      const dot = d.k === "urgent" ? t.urgent : d.k === "warn" ? t.warn : d.k === "good" ? t.good : t.due;
+      const on = s.filter === d.filter && d.filter;
+      return {...d, bg, fg, dot, subFg: fg, border: on ? dot : "transparent",
+        go: d.tab ? go(d.tab) : () => this.setState({tab:"patients", pid:null, filter: s.filter === d.filter ? null : d.filter})};
+    });
+
+    const checkins = CHECKINS.map((c, i) => {
+      const p = PEOPLE.find(x => x.id === c.pid);
+      const [bg, fg] = this.st(t, c.k);
+      const [avBg, avFg] = t.avs[i % t.avs.length];
+      const accent = c.k === "urgent" ? t.urgent : c.k === "good" ? t.good : t.nav.checkins[0];
+      return {...c, name:p.name, ini:p.ini, bg, fg, avBg, avFg, accent,
+        go: () => this.setState({tab:"patients", pid:c.pid})};
+    });
+
+    const alerts = ALERTS.map(a => {
+      const acked = a.sev !== "urgent" || s.acked.includes(a.id);
+      return {...a,
+        cardBg: acked ? t.card : t.urgentBg,
+        border: acked ? t.faint : t.urgent,
+        iconBg: acked ? t.soft : t.urgent,
+        iconFg: acked ? t.muted : "#ffffff",
+        titleFg: acked ? t.ink : t.urgentFg,
+        btn: acked ? "Acknowledged" : "Acknowledge",
+        btnBg: acked ? t.soft : t.urgent,
+        btnFg: acked ? t.muted : "#ffffff",
+        btnBorder: acked ? t.faint : t.urgent,
+        cursor: acked ? "default" : "pointer",
+        act: acked ? () => {} : () => this.setState(st => ({acked: st.acked.concat(a.id)})),
+      };
+    });
+
+    const p = person && {...person,
+      sBg: this.st(t, person.k)[0], sFg: this.st(t, person.k)[1],
+      avBg: t.avs[PEOPLE.indexOf(person) % t.avs.length][0],
+      avFg: t.avs[PEOPLE.indexOf(person) % t.avs.length][1],
+      trendBars: person.bars.map((h, i) => ({h: h + "%", label: "V" + (i+1),
+        color: i === person.bars.length - 1 ? (person.k === "urgent" ? t.urgent : person.k === "warn" ? t.warn : t.good) : t.soft})),
+    };
+
+    const filterLabel = {urgent:"Urgent", warn:"Needs review", good:"Improving"}[s.filter];
+
+    return {
+      t, p,
+      nav: {patients: navItem("patients", activeTab === "patients"), checkins: navItem("checkins", activeTab === "checkins"),
+            alerts: navItem("alerts", activeTab === "alerts"), reports: navItem("reports", activeTab === "reports")},
+      openAlerts, openAlertLabel: openAlerts ? openAlerts + " unacknowledged" : "All acknowledged",
+      crumb: person ? "Patients / " + person.name : ({patients:"Patients", checkins:"Check-ins", alerts:"Alerts", reports:"Reports"})[s.tab],
+      showRoster: s.tab === "patients" && !person,
+      showPatient: !!person,
+      showCheckins: s.tab === "checkins",
+      showAlerts: s.tab === "alerts",
+      showReports: s.tab === "reports",
+      rosterTitle: filterLabel ? filterLabel + " patients" : "Patients",
+      rosterSub: filterLabel ? "Filtered from 18 active wounds · click a name to open the record" : "18 active wounds · triage refreshed 4 min ago",
+      filterOn: !!s.filter, clearFilter: () => this.setState({filter:null}),
+      back: () => this.setState({pid:null}),
+      rows, kpis, checkins, alerts,
+      reportStats: [
+        {label:"Healed this quarter", value:"34", sub:"+6 vs last quarter", fg:t.goodFg},
+        {label:"Median time to heal", value:"48 d", sub:"−5 d vs last quarter", fg:t.ink},
+        {label:"Escalations", value:"11", sub:"9 resolved within SLA", fg:t.urgentFg},
+      ],
+      reportBars: [
+        {label:"Surgical", value:"−32%", w:"88%", color:t.good},
+        {label:"Venous", value:"−21%", w:"62%", color:t.nav.checkins[0]},
+        {label:"Diabetic foot", value:"−14%", w:"44%", color:t.warn},
+        {label:"Pressure", value:"−9%", w:"28%", color:t.nav.alerts[0]},
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>
