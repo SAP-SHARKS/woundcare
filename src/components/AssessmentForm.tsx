@@ -43,33 +43,35 @@ export default function AssessmentForm({
   const [notice, setNotice] = useState('');
   const [showCamera, setShowCamera] = useState(false);
   const [qualityResult, setQualityResult] = useState<WoundAIResult | null>(null);
+  const [aiSuggestionsApplied, setAiSuggestionsApplied] = useState(false);
   const [skinTone, setSkinTone] = useState('not recorded');
-  const [moistureBalance, setMoistureBalance] = useState('moist');
-  const [treatmentDressing, setTreatmentDressing] = useState('Foam + silver dressing');
-  const [treatmentProcedure, setTreatmentProcedure] = useState('No procedure recorded');
+  const [moistureBalance, setMoistureBalance] = useState('');
+  const [treatmentDressing, setTreatmentDressing] = useState('');
+  const [treatmentProcedure, setTreatmentProcedure] = useState('');
+  const [painRecorded, setPainRecorded] = useState(false);
 
   const [form, setForm] = useState({
     assessment_date: new Date().toISOString().split('T')[0],
-    length_cm: '4.4',
-    width_cm: '2.6',
-    depth_cm: '0.5',
-    granulation_pct: 40,
-    slough_pct: 45,
-    eschar_pct: 15,
+    length_cm: '',
+    width_cm: '',
+    depth_cm: '',
+    granulation_pct: 0,
+    slough_pct: 0,
+    eschar_pct: 0,
     epithelial_pct: 0,
-    granulation_quality: 'healthy',
-    eschar_state: 'n/a',
-    exudate_amount: 'moderate',
-    exudate_type: 'serous',
-    wound_edge: 'attached',
-    periwound: 'intact',
-    pain_score: 4,
+    granulation_quality: '',
+    eschar_state: '',
+    exudate_amount: '',
+    exudate_type: '',
+    wound_edge: '',
+    periwound: '',
+    pain_score: 0,
     odor: false,
     tunneling: '',
     undermining: '',
-    exposed_structures: 'None',
+    exposed_structures: '',
     signs_requiring_review: '',
-    clinical_notes: 'Wound bed healthy with 40% granulation. Dressing intact and offloading boot applied.',
+    clinical_notes: '',
   });
 
   useEffect(() => {
@@ -109,6 +111,8 @@ export default function AssessmentForm({
         const file = new File([blob], `wound-capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
         const preview = URL.createObjectURL(file);
         setPhotos(prev => [...prev, { file, preview }]);
+        setQualityResult(null);
+        setAiSuggestionsApplied(false);
       });
   }
 
@@ -120,6 +124,8 @@ export default function AssessmentForm({
       next.push({ file: f, preview: URL.createObjectURL(f) });
     }
     setPhotos(prev => [...prev, ...next]);
+    setQualityResult(null);
+    setAiSuggestionsApplied(false);
   }
 
   function removePhoto(index: number) {
@@ -128,6 +134,35 @@ export default function AssessmentForm({
       return prev.filter((_, i) => i !== index);
     });
     setQualityResult(null);
+    setAiSuggestionsApplied(false);
+  }
+
+  function applyAIResult(result: WoundAIResult) {
+    const measurement = result.survey?.measurement;
+    const tissue = result.survey?.tissue;
+    const hasScale = Boolean(measurement?.scaleAvailable);
+    const allowedEdges = new Set(WOUND_EDGES.filter(Boolean));
+    const allowedPeriwound = new Set(PERIWOUND.filter(Boolean));
+    const edges = Array.isArray(result.survey?.edges?.findings) ? result.survey.edges.findings.filter((value: string) => allowedEdges.has(value)) : [];
+    const periwound = Array.isArray(result.survey?.periwound?.findings) ? result.survey.periwound.findings.filter((value: string) => allowedPeriwound.has(value)) : [];
+    const moisture = result.survey?.moisture?.state;
+    setForm(prev => ({
+      ...prev,
+      length_cm: hasScale && measurement?.lengthCm != null ? String(measurement.lengthCm) : '',
+      width_cm: hasScale && measurement?.widthCm != null ? String(measurement.widthCm) : '',
+      granulation_pct: tissue?.granulation ?? prev.granulation_pct,
+      slough_pct: tissue?.slough ?? prev.slough_pct,
+      eschar_pct: tissue?.eschar ?? prev.eschar_pct,
+      epithelial_pct: tissue?.epithelial ?? prev.epithelial_pct,
+      granulation_quality: tissue?.granulationQuality || prev.granulation_quality,
+      eschar_state: tissue?.escharState || prev.eschar_state,
+      exposed_structures: Array.isArray(tissue?.exposedStructures) ? tissue.exposedStructures.join(', ') : prev.exposed_structures,
+      wound_edge: edges.length ? edges.join(', ') : prev.wound_edge,
+      periwound: periwound.length ? periwound.join(', ') : prev.periwound,
+    }));
+    if (['desiccated', 'moist', 'wet', 'saturated'].includes(moisture)) setMoistureBalance(moisture);
+    setAiSuggestionsApplied(true);
+    setError('');
   }
   async function uploadPhotos(assessmentId: string): Promise<void> {
     if (!organizationId || photos.length === 0) return;
@@ -167,6 +202,11 @@ export default function AssessmentForm({
     }
     setError('');
     setNotice('');
+    if (!isTissueValid) {
+      setError(`Tissue percentages total ${totalTissue}%. Confirm values totaling 100% before submission.`);
+      setStep(2);
+      return;
+    }
     setSaving(true);
 
     const l = parseFloat(form.length_cm) || 0;
@@ -179,10 +219,10 @@ export default function AssessmentForm({
       length_cm: l, width_cm: w, depth_cm: d, area_cm2: Math.round(area * 100) / 100,
       granulation_pct: form.granulation_pct, slough_pct: form.slough_pct, eschar_pct: form.eschar_pct,
       epithelial_pct: form.epithelial_pct, exudate_amount: form.exudate_amount, exudate_type: form.exudate_type,
-      wound_edge: form.wound_edge, periwound: form.periwound, pain_score: form.pain_score, odor: form.odor,
+      wound_edge: form.wound_edge || null, periwound: form.periwound || null, pain_score: painRecorded ? form.pain_score : null, odor: form.odor,
       tunneling: form.tunneling, undermining: form.undermining, exposed_structures: form.exposed_structures,
       signs_requiring_review: form.signs_requiring_review,
-      clinical_notes: [form.clinical_notes, `Structured context: skin tone ${skinTone}; moisture ${moistureBalance}; dressing ${treatmentDressing}; procedure ${treatmentProcedure}.`].filter(Boolean).join('\\n'),
+      clinical_notes: [form.clinical_notes, `Structured context: skin tone ${skinTone}; moisture ${moistureBalance || 'not recorded'}; dressing ${treatmentDressing || 'not recorded'}; procedure ${treatmentProcedure || 'not recorded'}.`].filter(Boolean).join('\\n'),
       status: 'pending_review'
     };
 
@@ -219,24 +259,35 @@ export default function AssessmentForm({
   const steps = [
     ['Patient & wound', 'confirm identity'],
     ['Guided capture', 'quality gate'],
-    ['Measurements', 'AI pre-filled'],
+    ['Measurements', 'AI-assisted review'],
     ['Observations', 'structured fields'],
     ['Triage & submit', 'rules decide'],
   ];
 
   const totalTissue = form.granulation_pct + form.slough_pct + form.eschar_pct + form.epithelial_pct;
   const isTissueValid = totalTissue === 100;
-  const lengthNum = parseFloat(form.length_cm) || 0;
-  const widthNum = parseFloat(form.width_cm) || 0;
-  const calculatedArea = (lengthNum * widthNum).toFixed(1);
+  const parsedLength = parseFloat(form.length_cm);
+  const parsedWidth = parseFloat(form.width_cm);
+  const hasDimensions = Number.isFinite(parsedLength) && Number.isFinite(parsedWidth);
+  const lengthNum = hasDimensions ? parsedLength : 0;
+  const widthNum = hasDimensions ? parsedWidth : 0;
+  const calculatedArea = hasDimensions ? (lengthNum * widthNum).toFixed(1) : '—';
 
-  const urgent = (form.exudate_type === 'purulent' && form.odor) || form.pain_score >= 8;
-  const needsReview = urgent || form.pain_score >= 6 || Boolean(form.signs_requiring_review.trim());
+  const urgent = (form.exudate_type === 'purulent' && form.odor) || (painRecorded && form.pain_score >= 8);
+  const needsReview = urgent || (painRecorded && form.pain_score >= 6) || Boolean(form.signs_requiring_review.trim());
+  const qualityGrade = qualityResult?.survey?.imageQuality?.grade as string | undefined;
+  const markerDetected = Boolean(qualityResult?.survey?.imageQuality?.scaleReference);
+  const qualityStatus = !qualityResult ? (photos.length ? 'Awaiting analysis' : 'Awaiting capture')
+    : qualityGrade === 'D' ? 'Rejected'
+    : qualityGrade === 'C' ? 'Review'
+    : markerDetected ? 'Passed'
+    : 'Usable — no scale';
+  const qualityTone = qualityStatus === 'Passed' ? 'success' : qualityStatus === 'Rejected' ? 'danger' : qualityResult ? 'warning' : 'neutral';
   return (
     <div className="fixed inset-0 z-50 bg-[#f7f6f2] overflow-y-auto flex flex-col min-h-screen text-stone-800 font-sans">
       <header className="bg-white border-b border-stone-200/80 px-6 sm:px-10 py-4 flex items-center justify-between sticky top-0 z-20 shadow-sm">
         <div>
-          <p className="text-[11px] font-mono tracking-wider text-stone-500 uppercase">WEEKLY CHECK-IN · VISIT 6</p>
+          <p className="text-[11px] font-mono tracking-wider text-stone-500 uppercase">NEW WOUND CHECK-IN</p>
           <h1 className="text-xl sm:text-2xl font-bold text-stone-900 flex items-center gap-2 mt-0.5">
             {patientName} <span className="text-xs font-mono font-medium text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200">{woundLabel}</span>
           </h1>
@@ -422,15 +473,8 @@ export default function AssessmentForm({
                 patientId={patientId}
                 bodySite={woundLabel}
                 exudate={form.exudate_amount}
-                onResult={setQualityResult}
-                onApply={suggestions => {
-                  if (suggestions.length != null) set('length_cm', String(suggestions.length));
-                  if (suggestions.width != null) set('width_cm', String(suggestions.width));
-                  if (suggestions.granulation != null) set('granulation_pct', suggestions.granulation);
-                  if (suggestions.slough != null) set('slough_pct', suggestions.slough);
-                  if (suggestions.eschar != null) set('eschar_pct', suggestions.eschar);
-                  if (suggestions.epithelial != null) set('epithelial_pct', suggestions.epithelial);
-                }}
+                onResult={result => { setQualityResult(result); setAiSuggestionsApplied(false); }}
+                onApply={applyAIResult}
               />
             </section>
 
@@ -438,8 +482,8 @@ export default function AssessmentForm({
               <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-stone-900">Quality gate</h3>
-                  <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${qualityResult?.survey?.imageQuality?.grade && ['A','B'].includes(qualityResult.survey.imageQuality.grade) ? 'bg-emerald-100 text-emerald-800' : qualityResult ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-600'}`}>
-                    {qualityResult?.survey?.imageQuality?.grade && ['A','B'].includes(qualityResult.survey.imageQuality.grade) ? 'Passed' : qualityResult ? 'Review' : photos.length ? 'Awaiting analysis' : 'Awaiting capture'}
+                  <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${qualityTone === 'success' ? 'bg-emerald-100 text-emerald-800' : qualityTone === 'danger' ? 'bg-red-100 text-red-800' : qualityTone === 'warning' ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-600'}`}>
+                    {qualityStatus}
                   </span>
                 </div>
                 <QualityGateRows result={qualityResult} />
@@ -448,7 +492,7 @@ export default function AssessmentForm({
 
               <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className={`w-8 h-8 rounded-lg text-white font-bold text-sm flex items-center justify-center ${qualityResult?.survey?.imageQuality?.grade && ['A','B'].includes(qualityResult.survey.imageQuality.grade) ? 'bg-emerald-600' : qualityResult ? 'bg-amber-600' : 'bg-stone-400'}`}>{qualityResult?.survey?.imageQuality?.grade || '—'}</span>
+                  <span className={`w-8 h-8 rounded-lg text-white font-bold text-sm flex items-center justify-center ${qualityTone === 'success' ? 'bg-emerald-600' : qualityTone === 'danger' ? 'bg-red-600' : qualityResult ? 'bg-amber-600' : 'bg-stone-400'}`}>{qualityGrade || '—'}</span>
                   <div>
                     <h4 className="text-xs font-bold text-stone-900">Capture grade {qualityResult?.survey?.imageQuality?.grade || 'pending'}</h4>
                     <p className="text-[10px] text-stone-500">{qualityResult ? (qualityResult.survey?.imageQuality?.limitations?.join(' · ') || 'No quality limitation reported') : 'Run image analysis to assess the captured frame'}</p>
@@ -467,8 +511,18 @@ export default function AssessmentForm({
             <section className="bg-white rounded-2xl border border-stone-200/80 p-6 shadow-sm space-y-6">
               <div>
                 <h2 className="text-base font-bold text-stone-900">Measurements & wound bed</h2>
-                <p className="text-xs text-stone-500 mt-1">AI pre-fills from the marker-calibrated image, and withholds centimetres entirely when no scale marker is in frame. Edit any value — your entry is authoritative.</p>
+                <p className="text-xs text-stone-500 mt-1">AI suggestions are separate until you apply them. Confirmed fields below drive the graphs, summary, and saved clinical record.</p>
               </div>
+
+              {qualityResult && (
+                <div className={`rounded-xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${aiSuggestionsApplied ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                  <div>
+                    <p className={`text-xs font-bold ${aiSuggestionsApplied ? 'text-emerald-900' : 'text-amber-900'}`}>{aiSuggestionsApplied ? 'AI suggestions applied for clinician review' : 'AI result has not been applied to the confirmed record'}</p>
+                    <p className="mt-1 text-[11px] text-stone-600">AI tissue: {qualityResult.survey?.tissue?.granulation ?? '—'}% granulation, {qualityResult.survey?.tissue?.slough ?? '—'}% slough, {qualityResult.survey?.tissue?.eschar ?? '—'}% eschar. {qualityResult.survey?.measurement?.scaleAvailable ? `Calibrated size: ${qualityResult.survey.measurement.lengthCm} × ${qualityResult.survey.measurement.widthCm} cm.` : 'Centimetre measurements withheld because no usable scale marker was detected.'}</p>
+                  </div>
+                  {!aiSuggestionsApplied && <button type="button" onClick={() => applyAIResult(qualityResult)} className="shrink-0 px-3 py-2 rounded-lg bg-[#1e6b66] text-white text-xs font-bold">Apply AI suggestions</button>}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
@@ -477,9 +531,10 @@ export default function AssessmentForm({
                     type="number" step="0.1"
                     value={form.length_cm}
                     onChange={e => set('length_cm', e.target.value)}
-                    className="w-full px-3 py-2 bg-emerald-50/50 border border-teal-400 rounded-xl text-sm font-mono font-bold text-stone-900 focus:outline-none"
+                    placeholder="Not recorded"
+                    className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl text-sm font-mono font-bold text-stone-900 focus:outline-none"
                   />
-                  <span className="block text-[9.5px] text-teal-700 font-medium mt-1">AI · conf 0.93</span>
+                  <span className="block text-[9.5px] text-stone-500 font-medium mt-1">{aiSuggestionsApplied && markerDetected ? 'AI-assisted · clinician editable' : form.length_cm ? 'clinician entry' : 'not recorded'}</span>
                 </div>
                 <div>
                   <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">WIDTH (cm)</span>
@@ -487,9 +542,10 @@ export default function AssessmentForm({
                     type="number" step="0.1"
                     value={form.width_cm}
                     onChange={e => set('width_cm', e.target.value)}
-                    className="w-full px-3 py-2 bg-emerald-50/50 border border-teal-400 rounded-xl text-sm font-mono font-bold text-stone-900 focus:outline-none"
+                    placeholder="Not recorded"
+                    className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl text-sm font-mono font-bold text-stone-900 focus:outline-none"
                   />
-                  <span className="block text-[9.5px] text-teal-700 font-medium mt-1">AI · conf 0.91</span>
+                  <span className="block text-[9.5px] text-stone-500 font-medium mt-1">{aiSuggestionsApplied && markerDetected ? 'AI-assisted · clinician editable' : form.width_cm ? 'clinician entry' : 'not recorded'}</span>
                 </div>
                 <div>
                   <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">DEPTH (cm)</span>
@@ -557,23 +613,17 @@ export default function AssessmentForm({
               <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-3">
                 <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Accepted capture</h3>
                 <div className="aspect-[4/3] bg-stone-100 rounded-xl overflow-hidden border border-stone-200 relative flex items-center justify-center">
-                  <div className="w-24 h-16 rounded-full bg-gradient-to-r from-red-800 via-amber-700 to-red-900 border-2 border-dashed border-teal-400 flex items-center justify-center text-white text-[10px] font-bold shadow-inner">
-                    Wound outline
-                  </div>
+                  {photos.length ? <img src={photos[photos.length - 1].preview} alt="Accepted wound capture" className="w-full h-full object-contain" /> : <span className="text-xs text-stone-400">No capture available</span>}
                 </div>
                 <div className="text-[10px] font-mono text-stone-500 space-y-1">
-                  <p>px/mm 8.42 from marker</p>
-                  <p>white balance normalized · ΔE 2.1</p>
+                  <p>{markerDetected ? 'Calibration marker detected' : 'Calibrated scale not available'}</p>
+                  <p>{qualityResult ? `Image quality grade ${qualityGrade || 'not reported'}` : 'Image analysis not run'}</p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-3 text-xs">
+              <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-2 text-xs">
                 <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Previous visit</h3>
-                <div className="space-y-1.5 text-stone-600 font-mono">
-                  <div className="flex justify-between"><span>L × W × D</span><span>4.0 × 2.5 × 0.3</span></div>
-                  <div className="flex justify-between"><span>Area</span><span>7.6 cm²</span></div>
-                  <div className="flex justify-between"><span>Bed</span><span>60 / 30 / 10</span></div>
-                </div>
+                <p className="text-stone-500 leading-5">No verified prior assessment was loaded for this check-in. Trend comparisons will appear only when linked assessment data is available.</p>
               </div>
             </aside>
           </div>
@@ -587,7 +637,7 @@ export default function AssessmentForm({
                 <ObservationChips label="Exudate amount" options={[['none','None'],['scant','Light'],['moderate','Moderate'],['copious','Heavy']]} selected={[form.exudate_amount]} onToggle={value => set('exudate_amount', value)} />
                 <ObservationChips label="Exudate type" options={[['serous','Serous'],['serosanguineous','Serosanguinous'],['sanguineous','Sanguineous'],['purulent','Purulent']]} selected={[form.exudate_type]} onToggle={value => set('exudate_type', value)} />
               </div>
-              <div><div className="flex flex-wrap items-baseline gap-3 mb-2"><span className="text-xs font-bold text-stone-500 uppercase">Pain (0–10)</span><b className="text-base">{form.pain_score}</b><span className={`font-mono text-xs font-bold ${form.pain_score >= 7 ? 'text-red-700' : 'text-stone-500'}`}>{form.pain_score - 4 >= 0 ? '+' : ''}{form.pain_score - 4} vs last visit</span></div><input type="range" min="0" max="10" value={form.pain_score} onChange={e => set('pain_score', parseInt(e.target.value))} className="w-full accent-[#237b76]" /></div>
+              <div><div className="flex flex-wrap items-baseline gap-3 mb-2"><span className="text-xs font-bold text-stone-500 uppercase">Pain (0–10) · bedside only</span><b className="text-base">{painRecorded ? form.pain_score : 'Not recorded'}</b></div><input aria-label="Pain score" type="range" min="0" max="10" value={form.pain_score} onChange={e => { set('pain_score', parseInt(e.target.value)); setPainRecorded(true); }} className="w-full accent-[#237b76]" /><button type="button" onClick={() => setPainRecorded(false)} className="mt-2 text-[11px] text-stone-500 underline">Clear pain entry</button></div>
               <ObservationChips label="Periwound & infection signs — select all present" options={[['redness_gt_2cm','Redness > 2 cm'],['warmth','Warmth'],['swelling','Swelling'],['maceration','Maceration'],['purulence','Purulence'],['odor','Odor'],['increasing_pain','Increasing pain'],['fever_systemic','Fever / systemic']]} selected={form.signs_requiring_review.split(',').map(x => x.trim())} onToggle={value => { toggleCsv('signs_requiring_review', value); if (value === 'odor') set('odor', !form.odor); }} />
               <ObservationChips label="Skin tone — Fitzpatrick" options={[['I–II','Fitzpatrick I–II'],['III–IV','Fitzpatrick III–IV'],['V–VI','Fitzpatrick V–VI'],['not recorded','Fitzpatrick not recorded']]} selected={[skinTone]} onToggle={setSkinTone} />
               <p className="-mt-5 text-xs leading-5 text-stone-500">Skin tone is recorded because erythema-dependent findings read differently across the Fitzpatrick range.</p>
@@ -595,11 +645,11 @@ export default function AssessmentForm({
               <p className="-mt-5 text-xs leading-5 text-stone-500">Epibole is recorded explicitly rather than folded into “unattached.”</p>
               <ObservationChips label="Periwound skin — 4 cm margin" options={PERIWOUND.filter(Boolean).map(value => [value,value] as [string,string])} selected={form.periwound.split(',').map(x => x.trim())} onToggle={value => toggleCsv('periwound', value)} />
               <ObservationChips label="Moisture balance" options={['desiccated','moist','wet','saturated'].map(value => [value,value] as [string,string])} selected={[moistureBalance]} onToggle={setMoistureBalance} />
-              <div><span className="block text-xs font-bold text-stone-500 uppercase mb-3">Treatment this visit</span><div className="grid sm:grid-cols-2 gap-3"><select value={treatmentDressing} onChange={e => setTreatmentDressing(e.target.value)} className="w-full px-3 py-2.5 bg-white border border-stone-200 rounded-xl text-sm"><option>Foam + silver dressing</option><option>Foam dressing</option><option>Hydrofiber dressing</option><option>Alginate dressing</option><option>Other / not recorded</option></select><select value={treatmentProcedure} onChange={e => setTreatmentProcedure(e.target.value)} className="w-full px-3 py-2.5 bg-white border border-stone-200 rounded-xl text-sm"><option>No procedure recorded</option><option>Sharp debridement performed</option><option>Mechanical debridement</option><option>Offloading applied</option><option>Compression applied</option></select></div></div>
+              <div><span className="block text-xs font-bold text-stone-500 uppercase mb-3">Treatment this visit · clinician entered</span><div className="grid sm:grid-cols-2 gap-3"><select value={treatmentDressing} onChange={e => setTreatmentDressing(e.target.value)} className="w-full px-3 py-2.5 bg-white border border-stone-200 rounded-xl text-sm"><option value="">Dressing not recorded</option><option>Foam + silver dressing</option><option>Foam dressing</option><option>Hydrofiber dressing</option><option>Alginate dressing</option><option>Other</option></select><select value={treatmentProcedure} onChange={e => setTreatmentProcedure(e.target.value)} className="w-full px-3 py-2.5 bg-white border border-stone-200 rounded-xl text-sm"><option value="">Procedure not recorded</option><option>No procedure performed</option><option>Sharp debridement performed</option><option>Mechanical debridement</option><option>Offloading applied</option><option>Compression applied</option></select></div></div>
               <div><label className="sr-only">Context note</label><textarea value={form.clinical_notes} onChange={e => set('clinical_notes', e.target.value)} rows={4} placeholder="Context note (optional)…" className="w-full px-3.5 py-3 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20" /></div>
             </section>
             <aside className="space-y-4">
-              <RulePreview form={form} />
+              <RulePreview form={{ ...form, pain_recorded: painRecorded }} />
               <InfectionScreen form={form} />
               <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm text-xs"><h3 className="text-sm font-bold text-stone-900">Not obtainable from a photograph</h3><p className="text-xs text-stone-500 mt-2 leading-5">These are recorded at bedside or left blank. They are never inferred from the image.</p><div className="mt-4 space-y-2">{[['Depth',Boolean(form.depth_cm)],['Undermining',Boolean(form.undermining)],['Tunnelling',Boolean(form.tunneling)],['Induration',false],['Temperature',form.signs_requiring_review.includes('warmth')],['Odour',form.odor],['Pain',true],['Blanchability',false]].map(([label,recorded]) => <div key={String(label)} className={`flex justify-between gap-3 rounded-lg border px-3 py-2 ${recorded ? 'bg-emerald-50 border-emerald-200' : 'border-stone-200'}`}><span>{label}</span><span className="font-mono text-[10px] text-right">{recorded ? 'recorded at bedside' : 'not obtainable from image'}</span></div>)}</div></div>
               <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm"><h3 className="text-sm font-bold">Offline safety</h3><p className="mt-2 text-xs leading-5 text-stone-500">Draft fields remain available during this check-in. If offline mode is enabled, submission is queued when connectivity fails.</p></div>
@@ -623,7 +673,7 @@ export default function AssessmentForm({
               <div className="p-5 rounded-2xl bg-[#124f4b] text-white space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-teal-200">Structured visit summary</p>
                 <p className="text-sm leading-relaxed text-teal-50">
-                  Wound measures {lengthNum.toFixed(1)} × {widthNum.toFixed(1)} cm with estimated area {calculatedArea} cm². Pain is {form.pain_score}/10. Exudate is {form.exudate_amount}{form.exudate_type ? ` and ${form.exudate_type}` : ''}. Tissue bed comprises {form.granulation_pct}% granulation, {form.slough_pct}% slough, and {form.eschar_pct}% eschar. This summary is generated from entered fields and requires clinician review.
+                  {hasDimensions ? `Wound measures ${lengthNum.toFixed(1)} × ${widthNum.toFixed(1)} cm with estimated area ${calculatedArea} cm². ` : 'Calibrated wound dimensions are not recorded. '}{painRecorded ? `Pain is ${form.pain_score}/10. ` : 'Pain is not recorded. '}{form.exudate_amount ? `Exudate is ${form.exudate_amount}${form.exudate_type ? ` and ${form.exudate_type}` : ''}. ` : 'Exudate is not recorded. '}Tissue bed comprises {form.granulation_pct}% granulation, {form.slough_pct}% slough, {form.eschar_pct}% eschar, and {form.epithelial_pct}% epithelial tissue. This summary is generated only from confirmed fields and requires clinician review.
                 </p>
               </div>
             </section>
@@ -664,7 +714,7 @@ export default function AssessmentForm({
             ) : (
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || !isTissueValid}
                 className="px-6 py-2.5 bg-[#1e6b66] hover:bg-[#185854] text-white text-xs font-semibold rounded-xl transition shadow-sm disabled:opacity-50 flex items-center gap-2"
               >
                 {saving ? 'Saving...' : 'Submit assessment'}
@@ -690,8 +740,8 @@ function QualityGateRows({ result }: { result: WoundAIResult | null }) {
   const hasLimitation = (...terms: string[]) => limitations.some((item: string) => terms.some(term => item.includes(term)));
   const gradePassed = Boolean(survey?.imageQuality?.grade && ['A', 'B'].includes(survey.imageQuality.grade));
   const rows = [
-    { label: 'Distance 20–25 cm', value: 'not measured', state: 'unknown' },
-    { label: 'Perpendicularity ±10°', value: 'not measured', state: 'unknown' },
+    { label: 'Distance 20–25 cm', value: 'requires live sensor', state: 'unknown' },
+    { label: 'Perpendicularity ±10°', value: 'requires live sensor', state: 'unknown' },
     { label: 'Calibration marker visible', value: survey ? (survey.imageQuality?.scaleReference ? 'detected' : 'not detected') : '—', state: survey ? (survey.imageQuality?.scaleReference ? 'pass' : 'fail') : 'unknown' },
     { label: 'Sharpness / focus', value: survey ? (hasLimitation('blur', 'focus', 'sharp') ? 'limitation noted' : 'no issue reported') : '—', state: survey ? (hasLimitation('blur', 'focus', 'sharp') ? 'fail' : gradePassed ? 'pass' : 'unknown') : 'unknown' },
     { label: 'Exposure & white balance', value: survey ? (hasLimitation('exposure', 'lighting', 'white balance', 'glare') ? 'limitation noted' : 'no issue reported') : '—', state: survey ? (hasLimitation('exposure', 'lighting', 'white balance', 'glare') ? 'fail' : gradePassed ? 'pass' : 'unknown') : 'unknown' },
@@ -703,7 +753,7 @@ function ObservationChips({ label, options, selected, onToggle }: { label: strin
   return <div><span className="block text-xs font-bold text-stone-500 uppercase mb-3">{label}</span><div className="flex flex-wrap gap-2">{options.map(([value,text]) => { const active = selected.includes(value); return <button key={value} type="button" aria-pressed={active} onClick={() => onToggle(value)} className={`px-3 py-2 rounded-xl border text-xs font-semibold capitalize transition ${active ? 'bg-[#e8f3f2] border-[#69aaa5] text-[#17635f]' : 'bg-white border-stone-200 text-stone-700 hover:border-stone-400'}`}>{text}</button>; })}</div></div>;
 }
 
-type ObservationFormState = { exudate_amount: string; exudate_type: string; pain_score: number; signs_requiring_review: string; odor: boolean };
+type ObservationFormState = { exudate_amount: string; exudate_type: string; pain_score: number; pain_recorded?: boolean; signs_requiring_review: string; odor: boolean };
 
 function RulePreview({ form }: { form: ObservationFormState }) {
   const purulent = form.exudate_type === 'purulent' || form.signs_requiring_review.includes('purulence');
@@ -712,8 +762,8 @@ function RulePreview({ form }: { form: ObservationFormState }) {
   const rules = [
     [infectionFlag ? 'red' : 'stone', 'Red flag: infection signs', infectionFlag ? 'RF-03 would fire · urgent' : 'RF-03 · not triggered'],
     ['amber', 'Trend: area change', 'TD-01 · compare with previous visit'],
-    [form.pain_score >= 6 ? 'amber' : 'stone', 'Symptom: pain delta', `SY-02 · pain ${form.pain_score}/10`],
-    [purulent ? 'amber' : 'stone', 'Exudate: amount & type', `EX-01 · ${form.exudate_amount} / ${form.exudate_type}`],
+    [form.pain_recorded && form.pain_score >= 6 ? 'amber' : 'stone', 'Symptom: pain', form.pain_recorded ? `SY-02 · pain ${form.pain_score}/10` : 'SY-02 · not recorded'],
+    [purulent ? 'amber' : 'stone', 'Exudate: amount & type', form.exudate_amount ? `EX-01 · ${form.exudate_amount} / ${form.exudate_type || 'type not recorded'}` : 'EX-01 · not recorded'],
   ];
   return <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm"><h3 className="text-sm font-bold">Live rule preview</h3><div className="mt-4 space-y-4">{rules.map(([tone,title,trace]) => <div key={title} className="flex gap-3"><span className={`mt-1 w-2.5 h-2.5 rounded-full shrink-0 ${tone === 'red' ? 'bg-red-600' : tone === 'amber' ? 'bg-amber-600' : 'bg-stone-300'}`}/><div><p className="text-xs font-semibold text-stone-800">{title}</p><p className="font-mono text-[10px] text-stone-500 mt-0.5">{trace}</p></div></div>)}</div></div>;
 }
@@ -721,7 +771,7 @@ function RulePreview({ form }: { form: ObservationFormState }) {
 function InfectionScreen({ form }: { form: ObservationFormState }) {
   const signs = form.signs_requiring_review;
   const rows = [
-    ['NERDS','Non-healing','image-assessable',false], ['NERDS','Exudate','bedside only',form.exudate_amount !== 'none'],
+    ['NERDS','Non-healing','image-assessable',false], ['NERDS','Exudate','bedside only',Boolean(form.exudate_amount && form.exudate_amount !== 'none')],
     ['NERDS','Red friable granulation','image-assessable',false], ['NERDS','Debris','image-assessable',false],
     ['NERDS','Smell','bedside only',form.odor], ['STONEES','Size increasing','image-assessable',false],
     ['STONEES','Temperature','bedside only',signs.includes('warmth')], ['STONEES','Os — probe to bone','bedside only',false],
