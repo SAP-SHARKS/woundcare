@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { X, Save, ShieldAlert, Activity } from 'lucide-react';
+import { isUuid, requireUuid } from '../lib/validation';
 
-interface Wound {
+export interface Wound {
   id?: string;
   patient_id: string;
   organization_id: string | null;
@@ -20,7 +21,7 @@ interface Props {
   patientId: string;
   organizationId: string | null;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (savedWound?: Wound) => void;
 }
 
 const WOUND_TYPES: Record<string, string> = {
@@ -46,7 +47,7 @@ export function parseWoundLocation(locationStr: string) {
         notes: parsed.notes || ''
       };
     }
-  } catch (e) {
+  } catch {
     // Return plain string
   }
   return {
@@ -94,7 +95,7 @@ export default function WoundForm({ wound, patientId, organizationId, onClose, o
     }
   }, [wound]);
 
-  const setField = (key: keyof typeof form, value: any) => {
+  const setField = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
@@ -124,7 +125,17 @@ export default function WoundForm({ wound, patientId, organizationId, onClose, o
       status: form.status
     };
 
+    if (patientId.startsWith('sample-')) {
+      const previewWound: Wound = { ...payload, id: wound?.id || `sample-w-${crypto.randomUUID()}` };
+      onSaved(previewWound);
+      setSaving(false);
+      return;
+    }
+
     try {
+      requireUuid(patientId, 'Patient');
+      requireUuid(organizationId, 'Clinic');
+      if (wound?.id && !isUuid(wound.id)) throw new Error('This episode is a preview record and cannot be written to Supabase.');
       if (wound?.id) {
         // Edit mode
         const { error: err } = await supabase
@@ -140,8 +151,8 @@ export default function WoundForm({ wound, patientId, organizationId, onClose, o
         if (err) throw err;
       }
       onSaved();
-    } catch (err: any) {
-      setError(err.message || 'Failed to save wound record');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save wound record');
     } finally {
       setSaving(false);
     }
@@ -276,7 +287,7 @@ export default function WoundForm({ wound, patientId, organizationId, onClose, o
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-150 hover:text-slate-800 rounded-lg transition"
+            className="px-4 py-2.5 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500/30 rounded-lg transition-colors"
           >
             Cancel
           </button>

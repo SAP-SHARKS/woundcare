@@ -4,6 +4,7 @@ import { logAudit } from '../lib/audit';
 import { X, Save, AlertTriangle, Camera, Upload, Trash2, Image } from 'lucide-react';
 import WoundCamera from './WoundCamera';
 import { enqueueOfflineAssessment, isOfflineEnabled } from '../lib/offline';
+import { requireUuid } from '../lib/validation';
 
 interface Props {
   woundId: string;
@@ -115,7 +116,7 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
 
       if (uploadErr) throw new Error(`Photo upload failed: ${uploadErr.message}`);
 
-      await supabase.from('wound_images').insert({
+      const { error: imageRowError } = await supabase.from('wound_images').insert({
         assessment_id: assessmentId,
         wound_id: woundId,
         organization_id: organizationId,
@@ -125,6 +126,7 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
         mime_type: photo.file.type,
         file_size_bytes: photo.file.size,
       });
+      if (imageRowError) throw new Error(`Photo record could not be saved: ${imageRowError.message}`);
     }
     setUploadProgress('');
   }
@@ -149,12 +151,19 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
       signs_requiring_review: form.signs_requiring_review, clinical_notes: form.clinical_notes, status: 'pending_review'
     };
 
+    if (patientId?.startsWith('sample-') || woundId.startsWith('sample-')) {
+      alert('Preview assessment created locally. Connect a real patient record to save it to Supabase.');
+      setSaving(false);
+      onSaved();
+      return;
+    }
+
     try {
+      requireUuid(woundId, 'Wound episode');
+      requireUuid(organizationId, 'Clinic');
       if (!navigator.onLine && isOfflineEnabled(organizationId)) {
         if (!organizationId) throw new Error('A clinic must be selected before saving offline.');
-        const offlinePhotos = await Promise.all(photos.map(photo => new Promise<{ name: string; type: string; dataUrl: string }>((resolve, reject) => {
-          const reader = new FileReader(); reader.onload = () => resolve({ name: photo.file.name, type: photo.file.type, dataUrl: String(reader.result) }); reader.onerror = () => reject(reader.error); reader.readAsDataURL(photo.file);
-        })));
+        const offlinePhotos = photos.map(photo => ({ name: photo.file.name, type: photo.file.type, file: photo.file }));
         await enqueueOfflineAssessment({ localId: crypto.randomUUID(), organizationId, patientId, woundId, createdAt: new Date().toISOString(), assessment: assessmentPayload, photos: offlinePhotos });
         alert('Saved securely on this device. WoundTrack will show it as pending until synchronization is available.'); onSaved(); return;
       }
@@ -167,8 +176,8 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
 
       await logAudit('assessment.create', 'wound_assessment', woundId, organizationId);
       onSaved();
-    } catch (err: any) {
-      setError(err.message || 'Failed to save assessment');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save assessment');
       setSaving(false);
     }
   }
@@ -401,7 +410,7 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
           <div className="flex items-center justify-between pt-2 pb-2">
             <div className="text-xs text-slate-400">{uploadProgress}</div>
             <div className="flex gap-2">
-              <button type="button" onClick={onClose} className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-white rounded-lg transition-colors">Cancel</button>
+              <button type="button" onClick={onClose} className="px-4 py-2.5 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500/30 rounded-lg transition-colors">Cancel</button>
               <button type="submit" disabled={saving} className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 active:bg-teal-800 transition-colors shadow-sm disabled:opacity-50">
                 {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
                 {saving ? 'Saving...' : 'Save Assessment'}

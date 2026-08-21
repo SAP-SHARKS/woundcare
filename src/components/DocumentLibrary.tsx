@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/audit';
 import { FileText, Plus, Search, Trash2, Eye, Filter, X, Check, FolderOpen } from 'lucide-react';
+import { requireUuid } from '../lib/validation';
 
 interface DocumentItem {
   id: string;
@@ -56,6 +57,7 @@ export default function DocumentLibrary({ organizationId }: Props) {
       const { data: docs, error: fetchErr } = await supabase
         .from('documents')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (fetchErr) throw fetchErr;
@@ -94,15 +96,23 @@ export default function DocumentLibrary({ organizationId }: Props) {
     setSaving(true);
     setError(null);
     const finalUrl = fileUrl.trim() || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+    let safeUrl: URL;
+    try { safeUrl = new URL(finalUrl); if (safeUrl.protocol !== 'https:') throw new Error(); }
+    catch { setError('Document links must be valid HTTPS URLs.'); setSaving(false); return; }
 
     try {
+      requireUuid(organizationId, 'Clinic');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Your session expired. Sign in again before uploading a document.');
       const { data, error: insErr } = await supabase
         .from('documents')
         .insert({
           title: title.trim(),
           category,
           description: description.trim(),
-          file_url: finalUrl,
+          file_url: safeUrl.toString(),
+          organization_id: organizationId,
+          uploaded_by: user.id,
         })
         .select()
         .single();
@@ -127,7 +137,7 @@ export default function DocumentLibrary({ organizationId }: Props) {
           title: title.trim(),
           category,
           description: description.trim(),
-          file_url: finalUrl,
+          file_url: safeUrl.toString(),
           uploaded_by: 'bypass-user-id',
           created_at: new Date().toISOString(),
           profiles: { display_name: 'Bypass Super Admin' }
@@ -176,7 +186,8 @@ export default function DocumentLibrary({ organizationId }: Props) {
   const handleView = async (id: string, docTitle: string, url: string) => {
     // Audit log document view
     await logAudit('document.view', 'document', id, organizationId, { title: docTitle });
-    window.open(url, '_blank');
+    try { const safeUrl = new URL(url); if (safeUrl.protocol !== 'https:') throw new Error(); window.open(safeUrl.toString(), '_blank', 'noopener,noreferrer'); }
+    catch { setError('This document link was blocked because it is not a valid HTTPS URL.'); }
   };
 
   const filtered = documents.filter(doc => {

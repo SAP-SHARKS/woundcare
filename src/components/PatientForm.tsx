@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { isUuid, requireUuid } from '../lib/validation';
 import { X, Save, ShieldAlert, Heart, User, ClipboardList } from 'lucide-react';
 
 interface Patient {
@@ -109,6 +110,10 @@ export default function PatientForm({ patient, organizationId, onClose, onSaved 
     }
     setSaving(true);
     setError(null);
+    if (patient?.id?.startsWith('sample-')) { onSaved(); setSaving(false); return; }
+
+    try { requireUuid(organizationId, 'Clinic'); }
+    catch (validationError) { setError(validationError instanceof Error ? validationError.message : 'A valid clinic is required.'); setSaving(false); return; }
 
     const full_name = `${form.first_name.trim()} ${form.last_name.trim()}`;
     const payload = {
@@ -147,6 +152,7 @@ export default function PatientForm({ patient, organizationId, onClose, onSaved 
     };
 
     try {
+      if (patient?.id && !isUuid(patient.id)) throw new Error('This patient is a preview record and cannot be written to Supabase.');
       if (patient?.id) {
         // Edit mode
         const { error: err } = await supabase
@@ -557,7 +563,7 @@ export default function PatientForm({ patient, organizationId, onClose, onSaved 
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-150 hover:text-slate-800 rounded-lg transition"
+            className="px-4 py-2.5 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500/30 rounded-lg transition-colors"
           >
             Cancel
           </button>

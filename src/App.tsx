@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth, type UserRole } from './hooks/useAuth';
+import { signOut, useAuth, type UserRole } from './hooks/useAuth';
 import AuthPage from './components/AuthPage';
 import AppShell from './components/AppShell';
 
@@ -8,6 +8,7 @@ export default function App() {
   const [bypassAuth, setBypassAuth] = useState<any>(null);
 
   const activeAuth = bypassAuth || auth;
+  const demoEnabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO_MODE === 'true';
 
   const handleBypass = (role: UserRole) => {
     setBypassAuth({
@@ -29,7 +30,8 @@ export default function App() {
       role,
       organizationId: '809fb0b8-4c4f-4d3a-b8cb-4f36bfb1b72a', // mock organization
       membership: { id: 'm1', organization_id: '809fb0b8-4c4f-4d3a-b8cb-4f36bfb1b72a', role, status: 'active' },
-      loading: false
+      loading: false,
+      error: null
     });
   };
 
@@ -44,8 +46,11 @@ export default function App() {
     );
   }
 
+  if (activeAuth.error) {
+    return <div className="min-h-screen bg-slate-50 flex items-center justify-center p-5"><div className="max-w-md bg-white border border-red-200 rounded-xl p-5"><h1 className="font-semibold text-red-800">Access could not be verified</h1><p className="text-sm text-slate-600 mt-2">{activeAuth.error}</p><button onClick={() => void signOut().then(() => location.reload())} className="wt-button mt-4">Return to sign in</button></div></div>;
+  }
   if (!activeAuth.user) {
-    return <AuthPage onBypass={handleBypass} />;
+    return <AuthPage onBypass={handleBypass} allowBypass={demoEnabled} />;
   }
 
   return <AppShell auth={activeAuth} onExitPreview={() => setBypassAuth(null)} />;

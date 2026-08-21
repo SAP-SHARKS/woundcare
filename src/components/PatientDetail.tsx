@@ -504,9 +504,12 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
           patientId={patientId}
           organizationId={organizationId}
           onClose={() => setShowNewWound(false)}
-          onSaved={() => {
+          onSaved={(savedWound) => {
             setShowNewWound(false);
-            fetchData();
+            if (patientId.startsWith('sample-') && savedWound) {
+              setWounds(previous => [savedWound, ...previous]);
+              setExpandedWound(savedWound.id || null);
+            } else void fetchData();
           }}
         />
       )}
@@ -518,9 +521,10 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
           patientId={patientId}
           organizationId={organizationId}
           onClose={() => setEditingWound(null)}
-          onSaved={() => {
+          onSaved={(savedWound) => {
             setEditingWound(null);
-            fetchData();
+            if (patientId.startsWith('sample-') && savedWound) setWounds(previous => previous.map(item => item.id === savedWound.id ? savedWound : item));
+            else void fetchData();
           }}
         />
       )}

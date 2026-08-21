@@ -1,0 +1,3 @@
+export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+export function isUuid(value: string | null | undefined): value is string { return typeof value === 'string' && UUID_PATTERN.test(value); }
+export function requireUuid(value: string | null | undefined, label: string): string { if (!isUuid(value)) throw new Error(`${label} is missing or invalid. Refresh the page and select a real record before saving.`); return value; }

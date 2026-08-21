@@ -18,6 +18,7 @@ export interface AuthState {
   organizationId: string | null;
   membership: OrgMembership | null;
   loading: boolean;
+  error: string | null;
 }
 
 async function fetchUserContext(user: User): Promise<{ role: UserRole; organizationId: string | null; membership: OrgMembership | null }> {
@@ -28,13 +29,11 @@ async function fetchUserContext(user: User): Promise<{ role: UserRole; organizat
     .maybeSingle();
 
   const metaRole = (user.app_metadata?.role ?? user.user_metadata?.role) as UserRole | undefined;
-  const role = (profile?.role as UserRole) ?? metaRole ?? 'patient';
+  let role = (profile?.role as UserRole) ?? metaRole ?? 'patient';
   let organizationId = profile?.organization_id ?? null;
   let membership: OrgMembership | null = null;
 
-  if (profileError) {
-    console.warn('Profile fetch failed:', profileError.message);
-  }
+  if (profileError) throw new Error(`Unable to verify your profile: ${profileError.message}`);
 
   const { data: mem, error: memError } = await supabase
     .from('organization_memberships')
@@ -44,12 +43,11 @@ async function fetchUserContext(user: User): Promise<{ role: UserRole; organizat
     .limit(1)
     .maybeSingle();
 
-  if (memError) {
-    console.warn('Membership fetch failed:', memError.message);
-  }
+  if (memError) throw new Error(`Unable to verify clinic access: ${memError.message}`);
 
   if (mem) {
     membership = mem;
+    if (role !== 'super_admin') role = mem.role as UserRole;
     if (!organizationId) {
       organizationId = mem.organization_id;
     }
@@ -66,16 +64,17 @@ export function useAuth() {
     organizationId: null,
     membership: null,
     loading: true,
+    error: null,
   });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         fetchUserContext(session.user).then(ctx => {
-          setAuthState({ user: session.user, session, ...ctx, loading: false });
-        });
+          setAuthState({ user: session.user, session, ...ctx, loading: false, error: null });
+        }).catch(error => setAuthState({ user: session.user, session, role: null, organizationId: null, membership: null, loading: false, error: error instanceof Error ? error.message : 'Unable to verify access.' }));
       } else {
-        setAuthState({ user: null, session: null, role: null, organizationId: null, membership: null, loading: false });
+        setAuthState({ user: null, session: null, role: null, organizationId: null, membership: null, loading: false, error: null });
       }
     });
 
@@ -83,10 +82,10 @@ export function useAuth() {
       if (session?.user) {
         (async () => {
           const ctx = await fetchUserContext(session.user);
-          setAuthState({ user: session.user, session, ...ctx, loading: false });
-        })();
+          setAuthState({ user: session.user, session, ...ctx, loading: false, error: null });
+        })().catch(error => setAuthState({ user: session.user, session, role: null, organizationId: null, membership: null, loading: false, error: error instanceof Error ? error.message : 'Unable to verify access.' }));
       } else {
-        setAuthState({ user: null, session: null, role: null, organizationId: null, membership: null, loading: false });
+        setAuthState({ user: null, session: null, role: null, organizationId: null, membership: null, loading: false, error: null });
       }
     });
 
@@ -96,12 +95,12 @@ export function useAuth() {
   return authState;
 }
 
-export async function signUp(email: string, password: string, role: UserRole, displayName: string) {
+export async function signUp(email: string, password: string, displayName: string) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { role, display_name: displayName },
+      data: { display_name: displayName },
     },
   });
   if (error) throw error;

@@ -89,13 +89,15 @@ export default function OrganizationManager() {
       if (newOrg && !err) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await supabase.from('organization_memberships').insert({
+          const { error: membershipError } = await supabase.from('organization_memberships').insert({
             organization_id: newOrg.id,
             user_id: user.id,
             role: 'clinic_admin',
             status: 'active',
           });
-          await supabase.from('profiles').update({ organization_id: newOrg.id }).eq('id', user.id);
+          if (membershipError) err = membershipError;
+        } else {
+          err = new Error('Your session expired. Sign in again before creating a clinic.');
         }
       }
     }
@@ -312,7 +314,7 @@ export default function OrganizationManager() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
-              <button onClick={closeModal} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">Cancel</button>
+              <button onClick={closeModal} className="px-4 py-2 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500/30 rounded-lg transition-colors">Cancel</button>
               <button onClick={handleSave} disabled={saving || !form.name.trim()}
                 className="px-5 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors shadow-sm">
                 {saving ? 'Saving…' : modal.editId ? 'Save Changes' : 'Create'}

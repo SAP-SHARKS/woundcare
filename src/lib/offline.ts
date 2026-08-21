@@ -1,83 +1,23 @@
 import { supabase } from './supabase';
-
-const DB_NAME = 'woundtrack-offline';
-const STORE = 'encrypted-queue';
-const KEY_STORE = 'device-keys';
-const SETTING_PREFIX = 'woundtrack:offline:';
-
-export interface OfflineAssessmentBundle {
-  localId: string;
-  organizationId: string;
-  patientId?: string;
-  woundId: string;
-  createdAt: string;
-  assessment: Record<string, unknown>;
-  photos: { name: string; type: string; dataUrl: string }[];
-}
-
-function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'id' });
-      if (!db.objectStoreNames.contains(KEY_STORE)) db.createObjectStore(KEY_STORE);
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function deviceKey(): Promise<CryptoKey> {
-  const db = await openDatabase();
-  const existing = await new Promise<CryptoKey | undefined>((resolve, reject) => {
-    const request = db.transaction(KEY_STORE).objectStore(KEY_STORE).get('primary');
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-  if (existing) return existing;
-  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
-  await new Promise<void>((resolve, reject) => {
-    const request = db.transaction(KEY_STORE, 'readwrite').objectStore(KEY_STORE).put(key, 'primary');
-    request.onsuccess = () => resolve(); request.onerror = () => reject(request.error);
-  });
-  return key;
-}
-
-export function offlineSettingKey(organizationId: string) { return `${SETTING_PREFIX}${organizationId}`; }
-export function isOfflineEnabled(organizationId: string | null) { return !!organizationId && localStorage.getItem(offlineSettingKey(organizationId)) === 'true'; }
-
-export async function loadOfflineSetting(organizationId: string): Promise<boolean> {
-  const { data, error } = await supabase.from('organization_feature_settings').select('offline_mode_enabled').eq('organization_id', organizationId).maybeSingle();
-  if (!error && data) localStorage.setItem(offlineSettingKey(organizationId), String(data.offline_mode_enabled));
-  return !error && data ? !!data.offline_mode_enabled : isOfflineEnabled(organizationId);
-}
-
-export async function saveOfflineSetting(organizationId: string, enabled: boolean): Promise<{ savedRemotely: boolean }> {
-  localStorage.setItem(offlineSettingKey(organizationId), String(enabled));
-  window.dispatchEvent(new CustomEvent('woundtrack:offline-setting', { detail: { organizationId, enabled } }));
-  const { error } = await supabase.from('organization_feature_settings').upsert({ organization_id: organizationId, offline_mode_enabled: enabled, updated_at: new Date().toISOString() }, { onConflict: 'organization_id' });
-  return { savedRemotely: !error };
-}
-
-export async function enqueueOfflineAssessment(bundle: OfflineAssessmentBundle): Promise<void> {
-  const key = await deviceKey();
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const plaintext = new TextEncoder().encode(JSON.stringify(bundle));
-  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext);
-  const db = await openDatabase();
-  await new Promise<void>((resolve, reject) => {
-    const request = db.transaction(STORE, 'readwrite').objectStore(STORE).put({ id: bundle.localId, organizationId: bundle.organizationId, createdAt: bundle.createdAt, iv, encrypted });
-    request.onsuccess = () => resolve(); request.onerror = () => reject(request.error);
-  });
-  window.dispatchEvent(new Event('woundtrack:queue-changed'));
-}
-
-export async function offlineQueueCount(organizationId: string): Promise<number> {
-  const db = await openDatabase();
-  const records = await new Promise<{ organizationId: string }[]>((resolve, reject) => {
-    const request = db.transaction(STORE).objectStore(STORE).getAll();
-    request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
-  });
-  return records.filter(record => record.organizationId === organizationId).length;
-}
+const DB_NAME='woundtrack-offline',QUEUE='encrypted-queue-v2',LEGACY_QUEUE='encrypted-queue',SETTINGS='security-settings',SETTING_PREFIX='woundtrack:offline:';
+const keys=new Map<string,CryptoKey>();
+export interface OfflineAssessmentBundle{localId:string;organizationId:string;patientId?:string;woundId:string;createdAt:string;assessment:Record<string,unknown>;photos:{name:string;type:string;file:Blob}[]}
+interface Cipher{iv:Uint8Array;encrypted:ArrayBuffer}
+interface QueueRecord{id:string;organizationId:string;patientId?:string;woundId:string;createdAt:string;assessment:Cipher;photos:{name:string;type:string;iv:Uint8Array;encrypted:ArrayBuffer}[]}
+function openDatabase():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const request=indexedDB.open(DB_NAME,2);request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(QUEUE))db.createObjectStore(QUEUE,{keyPath:'id'});if(!db.objectStoreNames.contains(SETTINGS))db.createObjectStore(SETTINGS)};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
+async function setting<T>(key:string):Promise<T|undefined>{const db=await openDatabase();return new Promise((resolve,reject)=>{const r=db.transaction(SETTINGS).objectStore(SETTINGS).get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function putSetting(key:string,value:unknown):Promise<void>{const db=await openDatabase();return new Promise((resolve,reject)=>{const r=db.transaction(SETTINGS,'readwrite').objectStore(SETTINGS).put(value,key);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})}
+async function derive(secret:string,salt:Uint8Array){const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function encrypt(key:CryptoKey,data:BufferSource):Promise<Cipher>{const iv=crypto.getRandomValues(new Uint8Array(12));return{iv,encrypted:await crypto.subtle.encrypt({name:'AES-GCM',iv},key,data)}}
+async function decrypt(key:CryptoKey,cipher:Cipher){return crypto.subtle.decrypt({name:'AES-GCM',iv:cipher.iv},key,cipher.encrypted)}
+export async function unlockOfflineStorage(organizationId:string,secret:string){if(secret.length<8)throw new Error('Use at least 8 characters for the device unlock code.');let salt=await setting<Uint8Array>(`salt:${organizationId}`);if(!salt){salt=crypto.getRandomValues(new Uint8Array(16));await putSetting(`salt:${organizationId}`,salt)}const key=await derive(secret,salt);const verifier=await setting<Cipher>(`verifier:${organizationId}`);if(verifier){try{if(new TextDecoder().decode(await decrypt(key,verifier))!=='woundtrack-offline-v1')throw new Error()}catch{throw new Error('Incorrect device unlock code.')}}else await putSetting(`verifier:${organizationId}`,await encrypt(key,new TextEncoder().encode('woundtrack-offline-v1')));keys.set(organizationId,key);window.dispatchEvent(new Event('woundtrack:offline-unlocked'))}
+export function isOfflineStorageUnlocked(organizationId:string|null){return!!organizationId&&keys.has(organizationId)}
+export function clearOfflineKeyMaterial(){keys.clear()}
+export function offlineSettingKey(organizationId:string){return`${SETTING_PREFIX}${organizationId}`}
+export function isOfflineEnabled(organizationId:string|null){return!!organizationId&&localStorage.getItem(offlineSettingKey(organizationId))==='true'}
+export async function loadOfflineSetting(organizationId:string){const{data,error}=await supabase.from('organization_feature_settings').select('offline_mode_enabled').eq('organization_id',organizationId).maybeSingle();if(!error&&data)localStorage.setItem(offlineSettingKey(organizationId),String(data.offline_mode_enabled));return!error&&data?!!data.offline_mode_enabled:isOfflineEnabled(organizationId)}
+export async function saveOfflineSetting(organizationId:string,enabled:boolean){localStorage.setItem(offlineSettingKey(organizationId),String(enabled));const{error}=await supabase.from('organization_feature_settings').upsert({organization_id:organizationId,offline_mode_enabled:enabled,updated_at:new Date().toISOString()},{onConflict:'organization_id'});return{savedRemotely:!error}}
+export async function enqueueOfflineAssessment(bundle:OfflineAssessmentBundle){const key=keys.get(bundle.organizationId);if(!key)throw new Error('Unlock offline storage before saving clinical data on this device.');const assessment=await encrypt(key,new TextEncoder().encode(JSON.stringify(bundle.assessment)));const photos=[];for(const photo of bundle.photos)photos.push({name:photo.name,type:photo.type,...await encrypt(key,await photo.file.arrayBuffer())});const record:QueueRecord={id:bundle.localId,organizationId:bundle.organizationId,patientId:bundle.patientId,woundId:bundle.woundId,createdAt:bundle.createdAt,assessment,photos};const db=await openDatabase();await new Promise<void>((resolve,reject)=>{const r=db.transaction(QUEUE,'readwrite').objectStore(QUEUE).put(record);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)});window.dispatchEvent(new Event('woundtrack:queue-changed'))}
+async function countStore(db:IDBDatabase,name:string,organizationId:string){if(!db.objectStoreNames.contains(name))return 0;return new Promise<number>((resolve,reject)=>{const r=db.transaction(name).objectStore(name).getAll();r.onsuccess=()=>resolve((r.result as {organizationId:string}[]).filter(x=>x.organizationId===organizationId).length);r.onerror=()=>reject(r.error)})}
+export async function offlineQueueCounts(organizationId:string){const db=await openDatabase();return{hardened:await countStore(db,QUEUE,organizationId),legacy:await countStore(db,LEGACY_QUEUE,organizationId)}}
+export async function offlineQueueCount(organizationId:string){const counts=await offlineQueueCounts(organizationId);return counts.hardened+counts.legacy}

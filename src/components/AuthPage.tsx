@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { Activity, Mail, Lock, User, ArrowRight, Stethoscope, Heart, Building2, Shield } from 'lucide-react';
+import { Activity, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { signUp, signIn, type UserRole } from '../hooks/useAuth';
 
-export default function AuthPage({ onBypass }: { onBypass: (role: UserRole) => void }) {
+export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: UserRole) => void; allowBypass: boolean }) {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState<UserRole>('nurse');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +22,7 @@ export default function AuthPage({ onBypass }: { onBypass: (role: UserRole) => v
           setLoading(false);
           return;
         }
-        await signUp(email, password, role, displayName.trim());
+        await signUp(email, password, displayName.trim());
       } else {
         await signIn(email, password);
       }
@@ -44,13 +43,6 @@ export default function AuthPage({ onBypass }: { onBypass: (role: UserRole) => v
       setLoading(false);
     }
   }
-
-  const roles: { value: UserRole; label: string; icon: typeof Heart; desc: string }[] = [
-    { value: 'nurse', label: 'Nurse', icon: Heart, desc: 'Wound assessments' },
-    { value: 'doctor', label: 'Doctor', icon: Stethoscope, desc: 'Review & approve' },
-    { value: 'clinic_admin', label: 'Clinic Admin', icon: Building2, desc: 'Manage clinic' },
-    { value: 'super_admin', label: 'Super Admin', icon: Shield, desc: 'Platform admin' },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-slate-100 flex items-center justify-center p-4">
@@ -104,29 +96,7 @@ export default function AuthPage({ onBypass }: { onBypass: (role: UserRole) => v
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Role</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {roles.map(r => (
-                      <button
-                        key={r.value}
-                        type="button"
-                        onClick={() => setRole(r.value)}
-                        className={`flex items-center gap-2 p-2.5 rounded-xl border-2 transition-all text-left ${
-                          role === r.value
-                            ? 'border-teal-500 bg-teal-50 text-teal-700'
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                        }`}
-                      >
-                        <r.icon className="w-4 h-4 flex-shrink-0" />
-                        <div>
-                          <p className="text-xs font-semibold">{r.label}</p>
-                          <p className="text-[10px] opacity-70">{r.desc}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">New accounts start with patient-level access. Clinic roles are assigned through an administrator invitation.</p>
               </>
             )}
 
@@ -184,7 +154,7 @@ export default function AuthPage({ onBypass }: { onBypass: (role: UserRole) => v
           </form>
 
           {/* Sandbox Bypass Panel */}
-          <div className="px-6 pb-6 pt-2 border-t border-slate-50 bg-slate-50/20">
+          {allowBypass && <div className="px-6 pb-6 pt-2 border-t border-slate-50 bg-slate-50/20">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block text-center mb-2.5">Developer Sandbox Bypass</span>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -220,7 +190,7 @@ export default function AuthPage({ onBypass }: { onBypass: (role: UserRole) => v
                 Doctor Role
               </button>
             </div>
-          </div>
+          </div>}
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">

@@ -37,15 +37,17 @@ export default function TasksView({ organizationId }: { organizationId: string |
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', priority: 'medium' as Task['priority'], due_date: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('tasks')
       .select('*')
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false });
-    setTasks(data || []);
+    if (fetchError) setError(fetchError.message);
+    else setTasks(data || []);
     setLoading(false);
   }, [organizationId]);
 
@@ -56,7 +58,8 @@ export default function TasksView({ organizationId }: { organizationId: string |
   async function createTask() {
     if (!form.title.trim() || !organizationId) return;
     setSubmitting(true);
-    const { data } = await supabase
+    setError('');
+    const { data, error: createError } = await supabase
       .from('tasks')
       .insert({
         title: form.title.trim(),
@@ -68,6 +71,11 @@ export default function TasksView({ organizationId }: { organizationId: string |
       })
       .select()
       .single();
+    if (createError) {
+      setError(createError.message);
+      setSubmitting(false);
+      return;
+    }
     if (data) setTasks((prev) => [data, ...prev]);
     setForm({ title: '', description: '', priority: 'medium', due_date: '' });
     setShowModal(false);
@@ -76,7 +84,9 @@ export default function TasksView({ organizationId }: { organizationId: string |
 
   async function completeTask(id: string) {
     const now = new Date().toISOString();
-    await supabase.from('tasks').update({ status: 'completed', completed_at: now }).eq('id', id);
+    setError('');
+    const { error: updateError } = await supabase.from('tasks').update({ status: 'completed', completed_at: now }).eq('id', id);
+    if (updateError) { setError(updateError.message); return; }
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: 'completed' as const, completed_at: now } : t)));
   }
 
@@ -99,6 +109,7 @@ export default function TasksView({ organizationId }: { organizationId: string |
 
   return (
     <div className="space-y-6">
+      {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <ClipboardList className="w-6 h-6 text-teal-600" />

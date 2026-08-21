@@ -26,6 +26,7 @@ import DocumentLibrary from './DocumentLibrary';
 import OfflineModeSettings from './OfflineModeSettings';
 import PreviewDataScreen from './PreviewDataScreen';
 import InstallAppButton from './InstallAppButton';
+import { clearOfflineKeyMaterial } from '../lib/offline';
 
 type Screen =
   | { name: 'dashboard' }
@@ -72,7 +73,8 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function AppShell({ auth, onExitPreview }: Props) {
-  const [screen, setScreen] = useState<Screen>({ name: 'patients' });
+  const role = auth.role ?? 'patient';
+  const [screen, setScreen] = useState<Screen>(() => screenFromPath(window.location.pathname, role));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<PatientResult[]>([]);
@@ -82,11 +84,18 @@ export default function AppShell({ auth, onExitPreview }: Props) {
   const mobileSearchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
-  const role = auth.role ?? 'patient';
-
   const navItems = getNavItems(role);
 
+  useEffect(() => {
+    const syncFromUrl = () => setScreen(screenFromPath(window.location.pathname, role));
+    window.addEventListener('popstate', syncFromUrl);
+    const canonicalPath = pathForScreen(screenFromPath(window.location.pathname, role), role);
+    if (window.location.pathname !== canonicalPath) window.history.replaceState({}, '', canonicalPath);
+    return () => window.removeEventListener('popstate', syncFromUrl);
+  }, [role]);
+
   async function handleSignOut() {
+    clearOfflineKeyMaterial();
     if (auth.user?.id === 'bypass-user-id') {
       onExitPreview();
       return;
@@ -175,7 +184,7 @@ export default function AppShell({ auth, onExitPreview }: Props) {
   }, [mobileSearchOpen]);
 
   function handleSelectPatient(patientId: string) {
-    setScreen({ name: 'patient_detail', patientId });
+    navigate({ name: 'patient_detail', patientId });
     setShowDropdown(false);
     setSearchQuery('');
     setSearchResults([]);
@@ -185,6 +194,8 @@ export default function AppShell({ auth, onExitPreview }: Props) {
 
   function navigate(s: Screen) {
     setScreen(s);
+    const nextPath = pathForScreen(s, role);
+    if (window.location.pathname !== nextPath) window.history.pushState({}, '', nextPath);
     setSidebarOpen(false);
   }
 
@@ -313,9 +324,14 @@ export default function AppShell({ auth, onExitPreview }: Props) {
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1.5 hover:bg-slate-100 rounded-lg">
                 <Menu className="w-5 h-5 text-slate-600" />
               </button>
-              <h2 className="text-sm font-semibold text-slate-900">
-                {getScreenTitle(screen)}
-              </h2>
+              <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 min-w-0 text-sm">
+                <button onClick={() => navigate({ name: 'dashboard' })} className="hidden sm:inline text-slate-500 hover:text-teal-700">
+                  {ROLE_LABELS[role] ?? role}
+                </button>
+                <ChevronRight className="hidden sm:block w-3.5 h-3.5 text-slate-300" />
+                {screen.name === 'patient_detail' && <><button onClick={() => navigate({ name: 'patients' })} className="text-slate-500 hover:text-teal-700">Patients</button><ChevronRight className="w-3.5 h-3.5 text-slate-300" /></>}
+                <span className="font-semibold text-slate-900 truncate">{getScreenTitle(screen)}</span>
+              </nav>
             </div>
             <div className="flex items-center gap-2">
               <InstallAppButton />
@@ -406,6 +422,35 @@ export default function AppShell({ auth, onExitPreview }: Props) {
       </main>
     </div>
   );
+}
+
+const SCREEN_SLUGS: Record<Exclude<Screen['name'], 'patient_detail' | 'ai_review'>, string> = {
+  dashboard: 'dashboard', organizations: 'organizations', patients: 'patients', staff: 'staff',
+  alerts: 'alerts', tasks: 'tasks', audit_logs: 'audit-log', settings: 'settings',
+  documents: 'documents', command_center: 'triage', reports: 'reports', rules: 'rules',
+  reference_data: 'reference-data', offline_settings: 'offline', home_checkin: 'home-check-in',
+};
+
+function roleSlug(role: string): string {
+  return role.replace(/_/g, '-');
+}
+
+function pathForScreen(screen: Screen, role: string): string {
+  const base = `/${roleSlug(role)}`;
+  if (screen.name === 'patient_detail') return `${base}/patients/${encodeURIComponent(screen.patientId)}`;
+  if (screen.name === 'ai_review') return `${base}/ai-review/${encodeURIComponent(screen.assessmentId)}/${encodeURIComponent(screen.patientId)}`;
+  return `${base}/${SCREEN_SLUGS[screen.name]}`;
+}
+
+function screenFromPath(pathname: string, role: string): Screen {
+  const segments = pathname.split('/').filter(Boolean).map(segment => decodeURIComponent(segment));
+  if (segments[0] !== roleSlug(role)) return { name: role === 'patient' ? 'home_checkin' : 'dashboard' };
+  if (segments[1] === 'patients' && segments[2]) return { name: 'patient_detail', patientId: segments[2] };
+  if (segments[1] === 'ai-review' && segments[2] && segments[3]) {
+    return { name: 'ai_review', assessmentId: segments[2], patientId: segments[3] };
+  }
+  const match = Object.entries(SCREEN_SLUGS).find(([, slug]) => slug === segments[1]);
+  return match ? { name: match[0] } as Screen : { name: role === 'patient' ? 'home_checkin' : 'dashboard' };
 }
 
 function getNavItems(role: string) {

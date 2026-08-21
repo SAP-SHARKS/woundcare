@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/doctor/:path*", "destination": "/index.html" },
+    { "source": "/nurse/:path*", "destination": "/index.html" },
+    { "source": "/patient/:path*", "destination": "/index.html" },
+    { "source": "/clinician/:path*", "destination": "/index.html" },
+    { "source": "/wound-specialist/:path*", "destination": "/index.html" },
+    { "source": "/clinic-admin/:path*", "destination": "/index.html" },
+    { "source": "/super-admin/:path*", "destination": "/index.html" }
+  ]
+}
