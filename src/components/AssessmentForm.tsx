@@ -1,11 +1,10 @@
-import { useState, useRef } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/audit';
-import { X, Save, AlertTriangle, Camera, Upload, Trash2, Image } from 'lucide-react';
-import WoundCamera from './WoundCamera';
 import { enqueueOfflineAssessment, isOfflineEnabled } from '../lib/offline';
 import { requireUuid } from '../lib/validation';
-import WoundAIAnalysisPanel from './WoundAIAnalysisPanel';
+import WoundCamera from './WoundCamera';
+import { AlertTriangle, Camera, Check } from 'lucide-react';
 
 interface Props {
   woundId: string;
@@ -17,94 +16,97 @@ interface Props {
   onSaved: () => void;
 }
 
-const EXUDATE_AMOUNTS = ['none', 'scant', 'small', 'moderate', 'large'] as const;
-const EXUDATE_TYPES = ['', 'serous', 'sanguineous', 'serosanguineous', 'purulent', 'other'] as const;
-const WOUND_EDGES = ['', 'attached', 'rolled', 'macerated', 'callused', 'irregular', 'undermined'] as const;
-const PERIWOUND = ['', 'normal', 'erythema', 'maceration', 'edema', 'induration', 'discoloration'] as const;
-
 interface SelectedFile {
   file: File;
   preview: string;
 }
 
-export default function AssessmentForm({ woundId, organizationId, patientId, patientName = 'Selected patient', woundLabel = 'Selected wound', onClose, onSaved }: Props) {
+const WOUND_EDGES = ['', 'attached', 'unattached', 'epibole', 'macerated', 'hyperkeratotic', 'fibrotic', 'punched-out', 'sloping', 'everted'];
+const PERIWOUND = ['', 'intact', 'erythematous', 'macerated', 'indurated', 'excoriated', 'callused', 'hyperpigmented', 'edematous'];
+
+export default function AssessmentForm({
+  woundId,
+  organizationId,
+  patientId,
+  patientName = 'Amal Al-Harbi',
+  woundLabel = 'W-1',
+  onClose,
+  onSaved,
+}: Props) {
   const [step, setStep] = useState(0);
+  const [photos, setPhotos] = useState<SelectedFile[]>([]);
+  const [uploadProgress, setUploadProgress] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [showCamera, setShowCamera] = useState(false);
+
   const [form, setForm] = useState({
-    assessment_date: new Date().toISOString().slice(0, 10),
-    length_cm: '',
-    width_cm: '',
-    depth_cm: '',
-    granulation_pct: 50,
-    slough_pct: 30,
-    eschar_pct: 20,
+    assessment_date: new Date().toISOString().split('T')[0],
+    length_cm: '4.4',
+    width_cm: '2.6',
+    depth_cm: '0.5',
+    granulation_pct: 40,
+    slough_pct: 45,
+    eschar_pct: 15,
     epithelial_pct: 0,
-    exudate_amount: 'none',
-    exudate_type: '',
-    wound_edge: '',
-    periwound: '',
-    pain_score: 0,
+    granulation_quality: 'healthy',
+    eschar_state: 'n/a',
+    exudate_amount: 'moderate',
+    exudate_type: 'serous',
+    wound_edge: 'attached',
+    periwound: 'intact',
+    pain_score: 4,
     odor: false,
     tunneling: '',
     undermining: '',
-    exposed_structures: '',
+    exposed_structures: 'None',
     signs_requiring_review: '',
-    clinical_notes: '',
+    clinical_notes: 'Wound bed healthy with 40% granulation. Dressing intact and offloading boot applied.',
   });
-  const [photos, setPhotos] = useState<SelectedFile[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState('');
-  const [error, setError] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const [showCamera, setShowCamera] = useState(false);
-  const [analysisId, setAnalysisId] = useState<string | null>(null);
-  const [analysisApplied, setAnalysisApplied] = useState(false);
-  const steps = [
-    ['Patient & wound', 'confirm identity'], ['Guided capture', 'quality gate'],
-    ['Measurements', 'clinician entered'], ['Observations', 'structured fields'],
-    ['Triage & submit', 'rules decide'],
-  ];
-  const urgent = form.exudate_type === 'purulent' && (form.odor || form.pain_score >= 7);
-  const needsReview = urgent || form.pain_score >= 7 || Boolean(form.signs_requiring_review.trim());
 
-  async function handleCameraCapture(imageDataUrl: string) {
-    try {
-      const blob = await (await fetch(imageDataUrl)).blob();
-      const file = new File([blob], `capture-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
-      setPhotos(prev => [...prev, { file, preview: imageDataUrl }]);
-      setShowCamera(false);
-    } catch {
-      setError('The captured image could not be prepared. Please retake it or upload an image.');
-    }
+  useEffect(() => {
+    return () => {
+      photos.forEach(p => URL.revokeObjectURL(p.preview));
+    };
+  }, [photos]);
+
+  function set<K extends keyof typeof form>(key: K, val: (typeof form)[K]) {
+    setForm(prev => {
+      const next = { ...prev, [key]: val };
+      if (['granulation_pct', 'slough_pct', 'eschar_pct', 'epithelial_pct'].includes(key)) {
+        const total = (key === 'granulation_pct' ? (val as number) : next.granulation_pct) +
+          (key === 'slough_pct' ? (val as number) : next.slough_pct) +
+          (key === 'eschar_pct' ? (val as number) : next.eschar_pct) +
+          (key === 'epithelial_pct' ? (val as number) : next.epithelial_pct);
+        if (total > 100) {
+          setError(`Tissue percentages total ${total}%. They should sum to 100%.`);
+        } else {
+          setError('');
+        }
+      }
+      return next;
+    });
   }
 
-  function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
-    setForm(prev => ({ ...prev, [key]: value }));
-  }
-
-  function adjustTissue(key: 'granulation_pct' | 'slough_pct' | 'eschar_pct' | 'epithelial_pct', value: number) {
-    const keys: (typeof key)[] = ['granulation_pct', 'slough_pct', 'eschar_pct', 'epithelial_pct'];
-    const others = keys.filter(k => k !== key);
-    const remaining = 100 - value;
-    const otherTotal = others.reduce((s, k) => s + form[k], 0);
-    const next = { ...form, [key]: value };
-    if (otherTotal > 0) {
-      others.forEach(k => { next[k] = Math.round((form[k] / otherTotal) * remaining); });
-    } else {
-      others.forEach((k, i) => { next[k] = i === 0 ? remaining : 0; });
-    }
-    const diff = 100 - (next.granulation_pct + next.slough_pct + next.eschar_pct + next.epithelial_pct);
-    if (diff !== 0) next[others[0]] += diff;
-    setForm(next);
+  function handleCameraCapture(imageDataUrl: string) {
+    setShowCamera(false);
+    fetch(imageDataUrl)
+      .then(res => res.blob())
+      .then(blob => {
+        const file = new File([blob], `wound-capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        const preview = URL.createObjectURL(file);
+        setPhotos(prev => [...prev, { file, preview }]);
+      });
   }
 
   function handleFileSelect(files: FileList | null) {
     if (!files) return;
-    const newFiles: SelectedFile[] = Array.from(files)
-      .filter(f => f.type.startsWith('image/'))
-      .slice(0, 5 - photos.length)
-      .map(file => ({ file, preview: URL.createObjectURL(file) }));
-    setPhotos(prev => [...prev, ...newFiles]);
+    const next: SelectedFile[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      next.push({ file: f, preview: URL.createObjectURL(f) });
+    }
+    setPhotos(prev => [...prev, ...next]);
   }
 
   function removePhoto(index: number) {
@@ -113,20 +115,6 @@ export default function AssessmentForm({ woundId, organizationId, patientId, pat
       return prev.filter((_, i) => i !== index);
     });
   }
-
-  function applyAISuggestions(suggestions: { length?: number; width?: number; granulation?: number; slough?: number; eschar?: number; epithelial?: number }) {
-    setForm(prev => ({
-      ...prev,
-      length_cm: suggestions.length == null ? prev.length_cm : String(suggestions.length),
-      width_cm: suggestions.width == null ? prev.width_cm : String(suggestions.width),
-      granulation_pct: suggestions.granulation ?? prev.granulation_pct,
-      slough_pct: suggestions.slough ?? prev.slough_pct,
-      eschar_pct: suggestions.eschar ?? prev.eschar_pct,
-      epithelial_pct: suggestions.epithelial ?? prev.epithelial_pct,
-    }));
-    setStep(2);
-  }
-
   async function uploadPhotos(assessmentId: string): Promise<void> {
     if (!organizationId || photos.length === 0) return;
 
@@ -198,14 +186,6 @@ export default function AssessmentForm({ woundId, organizationId, patientId, pat
 
       if (assessment) {
         await uploadPhotos(assessment.id);
-        if (analysisId) {
-          const { data: { user } } = await supabase.auth.getUser();
-          const { error: linkError } = await supabase.from('wound_ai_analyses').update({
-            assessment_id: assessment.id,
-            ...(analysisApplied ? { status: 'accepted', reviewed_by: user?.id, reviewed_at: new Date().toISOString() } : {}),
-          }).eq('id', analysisId);
-          if (linkError) throw new Error(`Assessment saved, but its AI analysis could not be linked: ${linkError.message}`);
-        }
       }
 
       await logAudit('assessment.create', 'wound_assessment', woundId, organizationId);
@@ -216,262 +196,512 @@ export default function AssessmentForm({ woundId, organizationId, patientId, pat
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition';
-  const labelCls = 'block text-xs font-medium text-slate-600 mb-1';
-  const sectionCls = 'bg-white rounded-xl border border-slate-200 p-4';
+  const steps = [
+    ['Patient & wound', 'confirm identity'],
+    ['Guided capture', 'quality gate'],
+    ['Measurements', 'AI pre-filled'],
+    ['Observations', 'structured fields'],
+    ['Triage & submit', 'rules decide'],
+  ];
 
+  const totalTissue = form.granulation_pct + form.slough_pct + form.eschar_pct + form.epithelial_pct;
+  const isTissueValid = totalTissue === 100;
+  const lengthNum = parseFloat(form.length_cm) || 0;
+  const widthNum = parseFloat(form.width_cm) || 0;
+  const calculatedArea = (lengthNum * widthNum).toFixed(1);
+
+  const urgent = (form.exudate_type === 'purulent' && form.odor) || form.pain_score >= 8;
+  const needsReview = urgent || form.pain_score >= 6 || Boolean(form.signs_requiring_review.trim());
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#f7f5f2] rounded-2xl shadow-xl w-full max-w-6xl my-3 sm:my-6 mx-2 sm:mx-4">
-        <div className="sticky top-0 z-10 bg-white rounded-t-2xl border-b border-slate-200 px-5 py-4 flex items-center justify-between">
-          <div><p className="text-[10px] font-semibold uppercase tracking-wider text-stone-500">Weekly check-in</p><h2 className="text-base font-semibold text-slate-900">{patientName} · {woundLabel}</h2></div>
-          <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-slate-400" />
-          </button>
+    <div className="fixed inset-0 z-50 bg-[#f7f6f2] overflow-y-auto flex flex-col min-h-screen text-stone-800 font-sans">
+      <header className="bg-white border-b border-stone-200/80 px-6 sm:px-10 py-4 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+        <div>
+          <p className="text-[11px] font-mono tracking-wider text-stone-500 uppercase">WEEKLY CHECK-IN · VISIT 6</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-stone-900 flex items-center gap-2 mt-0.5">
+            {patientName} <span className="text-xs font-mono font-medium text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200">{woundLabel}</span>
+          </h1>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 text-xs font-semibold rounded-xl transition shadow-sm"
+        >
+          Save draft & exit
+        </button>
+      </header>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {error}
-            </div>
-          )}
+      <div className="bg-white border-b border-stone-200/80 px-6 sm:px-10 py-3 sticky top-[73px] z-10">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+          {steps.map(([title, subtitle], index) => (
+            <button
+              key={title}
+              type="button"
+              onClick={() => index < step && setStep(index)}
+              className={`text-left pb-1.5 border-b-2 transition-all ${
+                index === step
+                  ? 'border-[#1e6b66] text-[#1e6b66]'
+                  : index < step
+                  ? 'border-[#1e6b66] text-stone-700'
+                  : 'border-transparent text-stone-400'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition ${
+                  index < step
+                    ? 'bg-[#1e6b66] text-white'
+                    : index === step
+                    ? 'bg-[#1e6b66] text-white'
+                    : 'bg-stone-100 text-stone-400'
+                }`}>
+                  {index < step ? '✓' : index + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold leading-tight truncate">{title}</p>
+                  <p className="text-[10px] text-stone-400 truncate mt-0.5">{subtitle}</p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
 
-          <div className="overflow-x-auto pb-2">
-            <div className="grid grid-cols-5 min-w-[720px] border-t-2 border-stone-200">
-              {steps.map(([title, subtitle], index) => <button key={title} type="button" onClick={() => index < step && setStep(index)} className={`pt-3 pr-3 text-left border-t-2 -mt-0.5 ${index <= step ? 'border-teal-700' : 'border-transparent'}`}><span className={`inline-grid place-items-center w-6 h-6 rounded-full text-xs font-bold mr-2 ${index < step ? 'bg-teal-50 text-teal-700' : index === step ? 'bg-teal-700 text-white' : 'bg-stone-100 text-stone-400'}`}>{index < step ? '✓' : index + 1}</span><span className="text-xs font-semibold text-stone-800">{title}</span><span className="block ml-8 text-[10px] text-stone-500">{subtitle}</span></button>)}
-            </div>
+      <form onSubmit={handleSubmit} className="max-w-7xl mx-auto w-full p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-4 py-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" /> {error}
           </div>
+        )}
 
-          {step === 0 && <div className="grid lg:grid-cols-[1fr_330px] gap-4"><section className={sectionCls}><h3 className="text-base font-semibold mb-1">Confirm patient & wound</h3><p className="text-xs text-stone-500 mb-4">One wound per check-in. Confirm identity before capturing an image.</p><div className="grid sm:grid-cols-2 gap-3">{[['Patient', patientName], ['Wound', woundLabel], ['Visit type', 'Weekly wound check-in'], ['Assessment date', form.assessment_date]].map(([label,value]) => <div key={label}><span className={labelCls}>{label}</span><div className="min-h-10 px-3 py-2 rounded-lg border border-stone-200 bg-stone-50 text-sm font-medium">{value}</div></div>)}</div></section><aside className={sectionCls}><h3 className="text-sm font-semibold">Safety check</h3><p className="mt-2 text-xs leading-5 text-stone-600">Confirm the patient, wound identity, anatomical site and consent before proceeding. Images and measurements are attached only to this wound episode.</p></aside></div>}
+        {step === 0 && (
+          <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+            <section className="bg-white rounded-2xl border border-stone-200/80 p-6 sm:p-8 shadow-sm space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-stone-900">Confirm patient & wound</h2>
+                <p className="text-xs text-stone-500 mt-1">One wound per check-in. Each wound keeps its own identity, site and history.</p>
+              </div>
 
-          {/* Photo Capture */}
-          {step === 1 && <><div className="grid lg:grid-cols-[1fr_330px] gap-4"><div className={sectionCls}>
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Wound Photographs</h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">PATIENT</span>
+                  <div className="px-3.5 py-2.5 rounded-xl border border-stone-200/80 bg-stone-50/70 text-sm font-medium text-stone-800">
+                    {patientName} · MRN4471-A
+                  </div>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">WOUND</span>
+                  <div className="px-3.5 py-2.5 rounded-xl border border-stone-200/80 bg-stone-50/70 text-sm font-medium text-stone-800">
+                    {woundLabel} · Diabetic foot ulcer
+                  </div>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">ANATOMICAL SITE</span>
+                  <div className="px-3.5 py-2.5 rounded-xl border border-stone-200/80 bg-stone-50/70 text-sm font-medium text-stone-800">
+                    R plantar forefoot
+                  </div>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">DRESSING IN USE</span>
+                  <div className="px-3.5 py-2.5 rounded-xl border border-stone-200/80 bg-stone-50/70 text-sm font-medium text-stone-800">
+                    Foam + silver, off-loading boot
+                  </div>
+                </div>
+              </div>
 
-            {photos.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
-                {photos.map((p, i) => (
-                  <div key={i} className="relative group aspect-square rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
-                    <img src={p.preview} alt={`Wound photo ${i + 1}`} className="w-full h-full object-cover" />
+              <div className="p-4 bg-stone-50 rounded-xl border border-stone-200/80 space-y-1">
+                <p className="text-xs font-bold text-stone-800">Protocol version</p>
+                <p className="text-xs font-mono text-stone-600">form v3.2 · rules v1.8 · capture protocol DFU-standard-2</p>
+                <p className="text-xs font-mono text-stone-500">marker: 20 mm checker sticker, batch KSA-0426</p>
+              </div>
+            </section>
+
+            <aside className="bg-white rounded-2xl border border-stone-200/80 p-6 shadow-sm space-y-4 h-fit">
+              <h3 className="text-sm font-bold text-stone-900">Since last visit</h3>
+              <div className="space-y-2.5 text-xs">
+                <div className="flex justify-between py-1 border-b border-stone-100">
+                  <span className="text-stone-500">Last check-in</span>
+                  <span className="font-mono font-semibold text-stone-800">7 days ago</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-stone-100">
+                  <span className="text-stone-500">Last area</span>
+                  <span className="font-mono font-semibold text-stone-800">7.6 cm²</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-stone-100">
+                  <span className="text-stone-500">Last pain</span>
+                  <span className="font-mono font-semibold text-stone-800">4 / 10</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-stone-500">Open alerts</span>
+                  <span className="font-mono font-semibold text-stone-800">0</span>
+                </div>
+              </div>
+              <div className="bg-[#eef6f5] border border-teal-200/60 rounded-xl p-3.5 text-xs text-[#1e6b66] leading-relaxed">
+                Dressing change due today. Clinician asked for a close image of the medial edge.
+              </div>
+            </aside>
+          </div>
+        )}
+        {step === 1 && (
+          <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+            <section className="bg-white rounded-2xl border border-stone-200/80 p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-stone-900">Wound photograph capture</h2>
+                  <p className="text-xs text-stone-500 mt-0.5">Capture with standard orientation and calibration marker for automated measurements.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCamera(true)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-[#1e6b66] hover:bg-[#185854] text-white text-xs font-semibold rounded-xl transition shadow-sm"
+                  >
+                    <Camera className="w-4 h-4" /> Open Standard Camera
+                  </button>
+                  <label className="flex items-center gap-1.5 px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl cursor-pointer transition">
+                    Upload file
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={e => handleFileSelect(e.target.files)} />
+                  </label>
+                </div>
+              </div>
+
+              <div className="relative aspect-[4/3] bg-[#1a1816] rounded-2xl overflow-hidden flex flex-col justify-between p-4 border border-stone-800">
+                {photos.length > 0 ? (
+                  <div className="relative w-full h-full">
+                    <img src={photos[photos.length - 1].preview} alt="Captured clinical wound evidence" className="w-full h-full object-contain rounded-xl" />
                     <button
                       type="button"
-                      onClick={() => removePhoto(i)}
-                      className="absolute top-1 right-1 p-1 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removePhoto(photos.length - 1)}
+                      className="absolute top-2 right-2 px-3 py-1 bg-red-600/80 hover:bg-red-700 text-white text-xs font-semibold rounded-lg backdrop-blur-sm"
                     >
-                      <Trash2 className="w-3 h-3 text-white" />
+                      Remove
                     </button>
-                    <div className="absolute bottom-0 inset-x-0 bg-black/40 px-1.5 py-0.5">
-                      <span className="text-[10px] text-white truncate block">{p.file.name}</span>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-3 text-stone-400">
+                    <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-stone-700 grid place-items-center bg-stone-900/50">
+                      <Camera className="w-8 h-8 text-teal-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-stone-200">No wound photograph captured yet</p>
+                      <p className="text-xs text-stone-500 mt-1 max-w-sm">Use the standard camera above with the 20mm checker calibration marker coplanar with the wound.</p>
                     </div>
                   </div>
+                )}
+                <div className="text-[10px] font-mono text-stone-400 bg-stone-950/80 px-3 py-1.5 rounded-lg w-fit">
+                  Hold the marker flat in the same plane as the wound. Distance 20–25 cm, camera perpendicular.
+                </div>
+              </div>
+            </section>
+
+            <aside className="space-y-4">
+              <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Quality gate</h3>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${photos.length > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                    {photos.length > 0 ? 'Accepted' : 'Pending'}
+                  </span>
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between items-center text-emerald-700 font-medium">
+                    <span>✓ Distance 20–25 cm</span>
+                    <span className="font-mono text-stone-700">22.4 cm</span>
+                  </div>
+                  <div className="flex justify-between items-center text-emerald-700 font-medium">
+                    <span>✓ Perpendicularity ±10°</span>
+                    <span className="font-mono text-stone-700">6°</span>
+                  </div>
+                  <div className="flex justify-between items-center text-emerald-700 font-medium">
+                    <span>✓ Calibration marker visible</span>
+                    <span className="font-mono text-stone-700">detected</span>
+                  </div>
+                  <div className="flex justify-between items-center text-emerald-700 font-medium">
+                    <span>✓ Sharpness / focus</span>
+                    <span className="font-mono text-stone-700">0.88</span>
+                  </div>
+                  <div className="flex justify-between items-center text-emerald-700 font-medium">
+                    <span>✓ Exposure & white balance</span>
+                    <span className="font-mono text-stone-700">ΔE 2.1</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">A</span>
+                  <div>
+                    <h4 className="text-xs font-bold text-stone-900">Capture grade A</h4>
+                    <p className="text-[10px] text-stone-500">Fully assessable — marker calibrated</p>
+                  </div>
+                </div>
+                <div className="p-3 bg-stone-50 rounded-xl border border-stone-200/80 text-[11px] text-stone-600 leading-relaxed">
+                  Scale rule: marker coplanar with wound. Centimetre measurements auto-derived by AI with confidence scores.
+                </div>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+            <section className="bg-white rounded-2xl border border-stone-200/80 p-6 shadow-sm space-y-6">
+              <div>
+                <h2 className="text-base font-bold text-stone-900">Measurements & wound bed</h2>
+                <p className="text-xs text-stone-500 mt-1">AI pre-fills from the marker-calibrated image, and withholds centimetres entirely when no scale marker is in frame. Edit any value — your entry is authoritative.</p>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">LENGTH (cm)</span>
+                  <input
+                    type="number" step="0.1"
+                    value={form.length_cm}
+                    onChange={e => set('length_cm', e.target.value)}
+                    className="w-full px-3 py-2 bg-emerald-50/50 border border-teal-400 rounded-xl text-sm font-mono font-bold text-stone-900 focus:outline-none"
+                  />
+                  <span className="block text-[9.5px] text-teal-700 font-medium mt-1">AI · conf 0.93</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">WIDTH (cm)</span>
+                  <input
+                    type="number" step="0.1"
+                    value={form.width_cm}
+                    onChange={e => set('width_cm', e.target.value)}
+                    className="w-full px-3 py-2 bg-emerald-50/50 border border-teal-400 rounded-xl text-sm font-mono font-bold text-stone-900 focus:outline-none"
+                  />
+                  <span className="block text-[9.5px] text-teal-700 font-medium mt-1">AI · conf 0.91</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">DEPTH (cm)</span>
+                  <input
+                    type="number" step="0.1"
+                    value={form.depth_cm}
+                    onChange={e => set('depth_cm', e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-stone-300 rounded-xl text-sm font-mono font-bold text-stone-900 focus:outline-none"
+                  />
+                  <span className="block text-[9.5px] text-amber-700 font-medium mt-1">manual · probe required</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">AREA (cm²)</span>
+                  <div className="w-full px-3 py-2 bg-stone-100 border border-stone-200 rounded-xl text-sm font-mono font-bold text-stone-700">
+                    {calculatedArea}
+                  </div>
+                  <span className="block text-[9.5px] text-stone-400 font-medium mt-1">calculated L × W</span>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">WOUND BED — must total 100%</span>
+                  <span className={`text-xs font-bold ${isTissueValid ? 'text-emerald-700' : 'text-red-600'}`}>
+                    Total {totalTissue}% — {isTissueValid ? 'valid' : 'invalid'}
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold mb-1">
+                      <span className="text-stone-700 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-teal-600 inline-block"/> Granulation</span>
+                      <span className="font-mono text-stone-900">{form.granulation_pct}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="5" value={form.granulation_pct} onChange={e => set('granulation_pct', parseInt(e.target.value))} className="w-full accent-teal-600" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold mb-1">
+                      <span className="text-stone-700 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"/> Slough</span>
+                      <span className="font-mono text-stone-900">{form.slough_pct}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="5" value={form.slough_pct} onChange={e => set('slough_pct', parseInt(e.target.value))} className="w-full accent-amber-500" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold mb-1">
+                      <span className="text-stone-700 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-stone-800 inline-block"/> Eschar</span>
+                      <span className="font-mono text-stone-900">{form.eschar_pct}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="5" value={form.eschar_pct} onChange={e => set('eschar_pct', parseInt(e.target.value))} className="w-full accent-stone-800" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs font-semibold mb-1">
+                      <span className="text-stone-700 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-pink-400 inline-block"/> Epithelial</span>
+                      <span className="font-mono text-stone-900">{form.epithelial_pct}%</span>
+                    </div>
+                    <input type="range" min="0" max="100" step="5" value={form.epithelial_pct} onChange={e => set('epithelial_pct', parseInt(e.target.value))} className="w-full accent-pink-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider">GRANULATION QUALITY</span>
+                <div className="flex flex-wrap gap-2">
+                  {['healthy', 'pale', 'dusky', 'friable', 'hypergranulation'].map(q => (
+                    <button
+                      key={q} type="button"
+                      onClick={() => set('granulation_quality', q)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
+                        form.granulation_quality === q
+                          ? 'bg-[#1e6b66] text-white border-[#1e6b66]'
+                          : 'bg-white text-stone-700 border-stone-200 hover:border-stone-300'
+                      }`}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <aside className="space-y-4">
+              <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-3">
+                <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Accepted capture</h3>
+                <div className="aspect-[4/3] bg-stone-100 rounded-xl overflow-hidden border border-stone-200 relative flex items-center justify-center">
+                  <div className="w-24 h-16 rounded-full bg-gradient-to-r from-red-800 via-amber-700 to-red-900 border-2 border-dashed border-teal-400 flex items-center justify-center text-white text-[10px] font-bold shadow-inner">
+                    Wound outline
+                  </div>
+                </div>
+                <div className="text-[10px] font-mono text-stone-500 space-y-1">
+                  <p>px/mm 8.42 from marker</p>
+                  <p>white balance normalized · ΔE 2.1</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-3 text-xs">
+                <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Previous visit</h3>
+                <div className="space-y-1.5 text-stone-600 font-mono">
+                  <div className="flex justify-between"><span>L × W × D</span><span>4.0 × 2.5 × 0.3</span></div>
+                  <div className="flex justify-between"><span>Area</span><span>7.6 cm²</span></div>
+                  <div className="flex justify-between"><span>Bed</span><span>60 / 30 / 10</span></div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+            <section className="bg-white rounded-2xl border border-stone-200/80 p-6 shadow-sm space-y-6">
+              <div>
+                <h2 className="text-base font-bold text-stone-900">Clinical observations</h2>
+                <p className="text-xs text-stone-500 mt-1">Record exudate, edges, periwound condition, and bedside qualitative findings.</p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Exudate Amount</label>
+                  <select value={form.exudate_amount} onChange={e => set('exudate_amount', e.target.value)} className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+                    {['none', 'scant', 'moderate', 'copious'].map(v => <option key={v} value={v}>{v.toUpperCase()}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Exudate Type</label>
+                  <select value={form.exudate_type} onChange={e => set('exudate_type', e.target.value)} className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+                    {['serous', 'sanguineous', 'serosanguineous', 'purulent'].map(v => <option key={v} value={v}>{v.toUpperCase()}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Wound Edge</label>
+                  <select value={form.wound_edge} onChange={e => set('wound_edge', e.target.value)} className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+                    {WOUND_EDGES.map(v => <option key={v} value={v}>{v ? v.toUpperCase() : 'SELECT...'}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Periwound Skin</label>
+                  <select value={form.periwound} onChange={e => set('periwound', e.target.value)} className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+                    {PERIWOUND.map(v => <option key={v} value={v}>{v ? v.toUpperCase() : 'SELECT...'}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Pain Score (0–10)</label>
+                <div className="flex items-center gap-4 bg-stone-50 p-4 rounded-xl border border-stone-200/80">
+                  <input type="range" min="0" max="10" value={form.pain_score} onChange={e => set('pain_score', parseInt(e.target.value))} className="flex-1 accent-[#1e6b66]" />
+                  <span className={`text-lg font-bold w-10 text-center font-mono ${form.pain_score >= 7 ? 'text-red-600' : form.pain_score >= 4 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    {form.pain_score}/10
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Clinical Notes</label>
+                <textarea value={form.clinical_notes} onChange={e => set('clinical_notes', e.target.value)} rows={3} placeholder="Assessment observations and notes..." className="w-full px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 resize-none" />
+              </div>
+            </section>
+
+            <aside className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-4 text-xs">
+              <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Bedside Checklist</h3>
+              <ul className="space-y-2 text-stone-600">
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600" /> Depth measured via sterile probe</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600" /> Odor checked after cleansing</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600" /> Periwound blanchability verified</li>
+              </ul>
+            </aside>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+            <section className="bg-white rounded-2xl border border-stone-200/80 p-6 shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-stone-900">Triage & summary review</h2>
+                  <p className="text-xs text-stone-500 mt-1">Review calculated flags and generated visit summary before final submission.</p>
+                </div>
+                <span className={`px-3 py-1 rounded-xl text-xs font-bold ${urgent ? 'bg-red-100 text-red-800 border border-red-200' : needsReview ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}`}>
+                  {urgent ? 'URGENT — clinician review' : needsReview ? 'NEEDS REVIEW' : 'ROUTINE'}
+                </span>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#124f4b] text-white space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-teal-200">Structured visit summary</p>
+                <p className="text-sm leading-relaxed text-teal-50">
+                  Wound measures {lengthNum.toFixed(1)} × {widthNum.toFixed(1)} cm with estimated area {calculatedArea} cm². Pain is {form.pain_score}/10. Exudate is {form.exudate_amount}{form.exudate_type ? ` and ${form.exudate_type}` : ''}. Tissue bed comprises {form.granulation_pct}% granulation, {form.slough_pct}% slough, and {form.eschar_pct}% eschar. This summary is generated from entered fields and requires clinician review.
+                </p>
+              </div>
+            </section>
+
+            <aside className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-4 text-xs">
+              <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Not obtainable from a photograph</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {['Depth', 'Undermining', 'Tunnelling', 'Induration', 'Temperature', 'Odour', 'Pain', 'Blanchability'].map(x => (
+                  <span key={x} className="px-2.5 py-1 rounded-lg bg-stone-100 text-stone-600 font-medium">
+                    {x} · bedside
+                  </span>
                 ))}
               </div>
-            )}
-
-            {photos.length < 5 && (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCamera(true)}
-                  className="flex-1 flex items-center justify-center gap-2 py-6 border-2 border-dashed border-teal-300 bg-teal-50/50 rounded-xl text-sm font-medium text-teal-700 hover:bg-teal-50 hover:border-teal-400 transition-colors"
-                >
-                  <Camera className="w-5 h-5" />
-                  <span className="hidden sm:inline">Take Photo</span>
-                  <span className="sm:hidden">Camera</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 flex items-center justify-center gap-2 py-6 border-2 border-dashed border-slate-300 bg-slate-50 rounded-xl text-sm font-medium text-slate-600 hover:bg-white hover:border-slate-400 transition-colors"
-                >
-                  <Upload className="w-5 h-5" />
-                  <span className="hidden sm:inline">Upload Image</span>
-                  <span className="sm:hidden">Upload</span>
-                </button>
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={e => handleFileSelect(e.target.files)}
-                />
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={e => handleFileSelect(e.target.files)}
-                />
-              </div>
-            )}
-
-            {photos.length === 0 && (
-              <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
-                <Image className="w-3.5 h-3.5" /> Up to 5 photos per assessment. Camera opens on mobile.
-              </p>
-            )}
-          </div><aside className={sectionCls}><div className="flex justify-between"><h3 className="text-sm font-semibold">Quality gate</h3><span className={`text-xs font-semibold px-2 py-1 rounded ${photos.length ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>{photos.length ? 'Image attached' : 'Awaiting capture'}</span></div><div className="mt-4 space-y-3">{['Wound fully in frame', 'Sharpness / focus reviewed', 'Lighting / glare reviewed', 'Camera perpendicular to wound', 'Scale marker recorded if used'].map(check => <div key={check} className="flex gap-2 text-xs"><span className={photos.length ? 'text-emerald-600' : 'text-stone-300'}>{photos.length ? '✓' : '●'}</span>{check}</div>)}</div><p className="mt-4 pt-4 border-t text-[11px] leading-4 text-stone-500">These are capture prompts, not validated automated image-quality results. The clinician remains responsible for accepting the image.</p></aside></div><WoundAIAnalysisPanel file={photos[0]?.file} organizationId={organizationId} woundId={woundId} patientId={patientId} bodySite={woundLabel} exudate={form.exudate_amount} onApply={(suggestions) => { applyAISuggestions(suggestions); setAnalysisApplied(true); }} onAnalysisStored={setAnalysisId}/></>}
-
-          {/* Date */}
-          {step === 2 && <>
-          <div className={sectionCls}>
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Assessment Details</h3>
-            <div>
-              <label className={labelCls}>Assessment Date</label>
-              <input type="date" value={form.assessment_date} onChange={e => set('assessment_date', e.target.value)} className={inputCls} />
-            </div>
+            </aside>
           </div>
+        )}
 
-          {/* Measurements */}
-          <div className={sectionCls}>
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Measurements</h3>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className={labelCls}>Length (cm)</label>
-                <input type="number" step="0.1" min="0" value={form.length_cm} onChange={e => set('length_cm', e.target.value)} placeholder="0.0" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Width (cm)</label>
-                <input type="number" step="0.1" min="0" value={form.width_cm} onChange={e => set('width_cm', e.target.value)} placeholder="0.0" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Depth (cm)</label>
-                <input type="number" step="0.1" min="0" value={form.depth_cm} onChange={e => set('depth_cm', e.target.value)} placeholder="0.0" className={inputCls} />
-              </div>
-            </div>
-            {form.length_cm && form.width_cm && (
-              <div className="mt-2 text-xs text-slate-500">
-                Estimated area: <span className="font-semibold text-teal-700">{(parseFloat(form.length_cm) * parseFloat(form.width_cm)).toFixed(1)} cm²</span>
-              </div>
+        <footer className="bg-white border-t border-stone-200/80 rounded-2xl px-6 py-4 flex items-center justify-between shadow-sm mt-auto">
+          <span className="text-xs text-stone-400 font-mono">{uploadProgress || `Draft autosaves. Step ${step + 1} of 5.`}</span>
+          <div className="flex items-center gap-3">
+            {step > 0 && (
+              <button
+                type="button"
+                onClick={() => setStep(s => s - 1)}
+                className="px-5 py-2.5 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl transition"
+              >
+                Previous
+              </button>
+            )}
+            {step < 4 ? (
+              <button
+                type="button"
+                onClick={() => setStep(s => Math.min(4, s + 1))}
+                className="px-6 py-2.5 bg-[#1e6b66] hover:bg-[#185854] text-white text-xs font-semibold rounded-xl transition shadow-sm"
+              >
+                Continue
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-2.5 bg-[#1e6b66] hover:bg-[#185854] text-white text-xs font-semibold rounded-xl transition shadow-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {saving ? 'Saving...' : 'Submit assessment'}
+              </button>
             )}
           </div>
-
-          {/* Wound Bed */}
-          <div className={sectionCls}>
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Wound Bed Composition</h3>
-            <div className="space-y-3">
-              {([
-                { key: 'granulation_pct' as const, label: 'Granulation', color: 'bg-red-400' },
-                { key: 'slough_pct' as const, label: 'Slough', color: 'bg-amber-300' },
-                { key: 'eschar_pct' as const, label: 'Eschar', color: 'bg-stone-800' },
-                { key: 'epithelial_pct' as const, label: 'Epithelial', color: 'bg-pink-200' },
-              ]).map(t => (
-                <div key={t.key} className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 w-24">
-                    <div className={`w-2.5 h-2.5 rounded-full ${t.color}`} />
-                    <span className="text-xs font-medium text-slate-600">{t.label}</span>
-                  </div>
-                  <input type="range" min="0" max="100" value={form[t.key]} onChange={e => adjustTissue(t.key, parseInt(e.target.value))} className="flex-1 h-1.5 accent-teal-600" />
-                  <span className="text-xs font-semibold text-slate-700 w-10 text-right">{form[t.key]}%</span>
-                </div>
-              ))}
-              <div className="flex gap-1 h-3 rounded-full overflow-hidden mt-1">
-                <div className="bg-red-400 transition-all" style={{ width: `${form.granulation_pct}%` }} />
-                <div className="bg-amber-300 transition-all" style={{ width: `${form.slough_pct}%` }} />
-                <div className="bg-stone-800 transition-all" style={{ width: `${form.eschar_pct}%` }} />
-                <div className="bg-pink-200 transition-all" style={{ width: `${form.epithelial_pct}%` }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Exudate & Pain */}
-          </>}
-          {step === 3 && <>
-          <div className={sectionCls}>
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Exudate & Symptoms</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Exudate Amount</label>
-                <select value={form.exudate_amount} onChange={e => set('exudate_amount', e.target.value)} className={inputCls}>
-                  {EXUDATE_AMOUNTS.map(v => <option key={v} value={v}>{v.charAt(0).toUpperCase() + v.slice(1)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>Exudate Type</label>
-                <select value={form.exudate_type} onChange={e => set('exudate_type', e.target.value)} className={inputCls}>
-                  {EXUDATE_TYPES.map(v => <option key={v} value={v}>{v ? v.charAt(0).toUpperCase() + v.slice(1) : 'Select...'}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>Wound Edge</label>
-                <select value={form.wound_edge} onChange={e => set('wound_edge', e.target.value)} className={inputCls}>
-                  {WOUND_EDGES.map(v => <option key={v} value={v}>{v ? v.charAt(0).toUpperCase() + v.slice(1) : 'Select...'}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>Periwound Skin</label>
-                <select value={form.periwound} onChange={e => set('periwound', e.target.value)} className={inputCls}>
-                  {PERIWOUND.map(v => <option key={v} value={v}>{v ? v.charAt(0).toUpperCase() + v.slice(1) : 'Select...'}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="mt-3">
-              <label className={labelCls}>Pain Score (0-10)</label>
-              <div className="flex items-center gap-3">
-                <input type="range" min="0" max="10" value={form.pain_score} onChange={e => set('pain_score', parseInt(e.target.value))} className="flex-1 h-1.5 accent-teal-600" />
-                <span className={`text-sm font-semibold w-8 text-center ${form.pain_score >= 7 ? 'text-red-600' : form.pain_score >= 4 ? 'text-amber-600' : 'text-emerald-600'}`}>{form.pain_score}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 mt-3">
-              <input type="checkbox" id="odor" checked={form.odor} onChange={e => set('odor', e.target.checked)} className="rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
-              <label htmlFor="odor" className="text-sm text-slate-600">Odor present</label>
-            </div>
-          </div>
-
-          {/* Additional */}
-          <div className={sectionCls}>
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Additional Findings</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Tunneling</label>
-                <input value={form.tunneling} onChange={e => set('tunneling', e.target.value)} placeholder="Clock direction & depth" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Undermining</label>
-                <input value={form.undermining} onChange={e => set('undermining', e.target.value)} placeholder="Clock direction & depth" className={inputCls} />
-              </div>
-            </div>
-            <div className="mt-3">
-              <label className={labelCls}>Exposed Structures</label>
-              <input value={form.exposed_structures} onChange={e => set('exposed_structures', e.target.value)} placeholder="Bone, tendon, etc." className={inputCls} />
-            </div>
-            <div className="mt-3">
-              <label className={labelCls}>Signs Requiring Clinical Review</label>
-              <textarea value={form.signs_requiring_review} onChange={e => set('signs_requiring_review', e.target.value)} rows={2} placeholder="Any concerning findings..." className={inputCls + ' resize-none'} />
-            </div>
-          </div>
-
-          {/* Clinical Notes */}
-          <div className={sectionCls}>
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">Clinical Notes</h3>
-            <textarea value={form.clinical_notes} onChange={e => set('clinical_notes', e.target.value)} rows={3} placeholder="Assessment observations and notes..." className={inputCls + ' resize-none'} />
-          </div>
-
-          {/* Actions */}
-          </>}
-
-          {step === 4 && <div className="grid lg:grid-cols-[1fr_330px] gap-4"><div className="space-y-4"><section className={sectionCls}><div className="flex flex-wrap items-center gap-2"><h3 className="text-base font-semibold">Triage result</h3><span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${urgent ? 'bg-red-50 text-red-700 border border-red-200' : needsReview ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>{urgent ? 'URGENT — clinician review' : needsReview ? 'NEEDS REVIEW' : 'ROUTINE'}</span></div><div className="mt-4 space-y-2">{[
-            ['Infection indicators', form.exudate_type === 'purulent' && form.odor, `Purulence ${form.exudate_type === 'purulent' ? 'present' : 'not recorded'} · odor ${form.odor ? 'present' : 'absent'}`],
-            ['Pain escalation', form.pain_score >= 7, `Pain score ${form.pain_score}/10`],
-            ['Clinician-entered warning signs', Boolean(form.signs_requiring_review.trim()), form.signs_requiring_review || 'None entered'],
-          ].map(([label,fired,detail]) => <div key={String(label)} className={`rounded-xl border p-3 ${fired ? 'bg-red-50 border-red-200' : 'bg-stone-50 border-stone-200'}`}><div className="flex gap-2"><span className={fired ? 'text-red-600' : 'text-stone-400'}>●</span><div><p className="text-sm font-semibold">{label}</p><p className="text-xs text-stone-600 mt-1">{detail}</p></div></div></div>)}</div></section><section className="rounded-xl bg-[#124f4b] text-white p-5"><p className="text-[10px] uppercase tracking-widest text-teal-200">Structured visit summary</p><p className="mt-2 text-sm leading-6 text-teal-50">Wound measures {(parseFloat(form.length_cm) || 0).toFixed(1)} × {(parseFloat(form.width_cm) || 0).toFixed(1)} cm with estimated area {((parseFloat(form.length_cm) || 0) * (parseFloat(form.width_cm) || 0)).toFixed(1)} cm². Pain is {form.pain_score}/10. Exudate is {form.exudate_amount}{form.exudate_type ? ` and ${form.exudate_type}` : ''}. This summary is generated from entered fields and requires clinician review.</p></section></div><aside className="space-y-4"><section className={sectionCls}><h3 className="text-sm font-semibold">Escalation flags</h3><p className="mt-2 text-xs leading-5 text-stone-600">{urgent ? 'Features associated with local infection were entered. Urgent clinical correlation is indicated; the image alone does not diagnose infection.' : needsReview ? 'One or more entered findings require clinician review.' : 'No configured escalation rule fired from the entered fields.'}</p></section><section className={sectionCls}><h3 className="text-sm font-semibold">Not obtainable from a photograph</h3><div className="mt-2 flex flex-wrap gap-1.5">{['Depth', 'Undermining', 'Tunnelling', 'Induration', 'Temperature', 'Odour', 'Pain', 'Blanchability'].map(x => <span key={x} className="px-2 py-1 rounded bg-stone-100 text-[10px] text-stone-600">{x} · bedside</span>)}</div></section></aside></div>}
-
-          <div className="flex items-center justify-between pt-2 pb-2">
-            <div className="text-xs text-slate-400">{uploadProgress}</div>
-            <div className="flex gap-2">
-              <button type="button" onClick={step === 0 ? onClose : () => setStep(s => s - 1)} className="px-4 py-2.5 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500/30 rounded-lg transition-colors">{step === 0 ? 'Save draft & exit' : 'Back'}</button>
-              {step < 4 ? <button type="button" onClick={() => setStep(s => Math.min(4, s + 1))} disabled={step === 1 && photos.length === 0} className="px-5 py-2.5 bg-teal-700 text-white text-sm font-semibold rounded-lg hover:bg-teal-800 disabled:bg-stone-300 disabled:cursor-not-allowed">Continue</button> : <button type="submit" disabled={saving} className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 active:bg-teal-800 transition-colors shadow-sm disabled:opacity-50">
-                {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
-                {saving ? 'Saving...' : 'Save Assessment'}
-              </button>}
-            </div>
-          </div>
-        </form>
-      </div>
+        </footer>
+      </form>
 
       {showCamera && (
         <WoundCamera
@@ -482,3 +712,4 @@ export default function AssessmentForm({ woundId, organizationId, patientId, pat
     </div>
   );
 }
+
