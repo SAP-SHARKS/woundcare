@@ -24,6 +24,7 @@ import PatientHomeCheckIn from './PatientHomeCheckIn';
 import AIAnalysisReview from './AIAnalysisReview';
 import DocumentLibrary from './DocumentLibrary';
 import OfflineModeSettings from './OfflineModeSettings';
+import PreviewDataScreen from './PreviewDataScreen';
 
 type Screen =
   | { name: 'dashboard' }
@@ -468,6 +469,10 @@ function renderScreen(
   navigate: (s: Screen) => void
 ) {
   const orgId = auth.organizationId;
+  const previewScreens = ['dashboard', 'organizations', 'staff', 'documents', 'alerts', 'tasks', 'audit_logs'] as const;
+  if (auth.user?.id === 'bypass-user-id' && previewScreens.some(name => name === screen.name)) {
+    return <PreviewDataScreen screen={screen.name as (typeof previewScreens)[number]} />;
+  }
 
   switch (screen.name) {
     case 'dashboard':
