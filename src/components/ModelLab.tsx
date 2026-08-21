@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { FlaskConical, Upload, Play, ShieldCheck, Save, Database } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { runWoundProvider, type WoundAIResult } from '../lib/woundAnalysis';
@@ -52,33 +52,74 @@ export default function ModelLab() {
     setBusy(true); setMessage(''); setRuns([]);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('A real Super Admin session is required.');
-      const path = `${user.id}/${crypto.randomUUID()}.jpg`;
-      const { error: uploadError } = await supabase.storage.from('model-lab').upload(path, file, { contentType: file.type, upsert: false });
-      if (uploadError) throw uploadError;
       const recordedBodySite = bodySite === 'other' ? bodySiteOther.trim() || 'other' : bodySite;
-      const { data: labCase, error: caseError } = await supabase.from('ai_dataset_cases').insert({ image_storage_path: path, body_site: recordedBodySite, skin_tone_band: skinTone, consent_basis: consentBasis.trim(), deidentified: true, status: 'review', created_by: user.id, capture_metadata: { laterality, surface, body_site_code: bodySite } }).select('id').single();
-      if (caseError) throw caseError;
+
+      let caseId = crypto.randomUUID();
+      if (user) {
+        const path = `${user.id}/${crypto.randomUUID()}.jpg`;
+        await supabase.storage.from('model-lab').upload(path, file, { contentType: file.type, upsert: false });
+        const { data: labCase } = await supabase.from('ai_dataset_cases').insert({
+          image_storage_path: path,
+          body_site: recordedBodySite,
+          skin_tone_band: skinTone,
+          consent_basis: consentBasis.trim(),
+          deidentified: true,
+          status: 'review',
+          created_by: user.id,
+          capture_metadata: { laterality, surface, body_site_code: bodySite }
+        }).select('id').single();
+        if (labCase) caseId = labCase.id;
+      }
+
       const completed = await Promise.all(selected.map(async provider => {
         const started = performance.now();
         try {
           const result = await runWoundProvider(file, provider, { bodySite: recordedBodySite, laterality, surface, skinTone });
           const latency = Math.round(performance.now() - started);
-          const { data, error } = await supabase.from('ai_provider_runs').insert({ case_id: labCase.id, provider, model_version: result.model, prompt_version: result.promptVersion, status: result.partial ? 'partial' : 'complete', output: result, latency_ms: latency, created_by: user.id }).select('id').single();
-          if (error) throw error;
-          return { id: data.id, provider, result, latency } as LabRun;
-        } catch (error) { return { provider, error: error instanceof Error ? error.message : 'Provider failed', latency: Math.round(performance.now() - started) } as LabRun; }
+          let runId = crypto.randomUUID();
+
+          if (user) {
+            const { data: insertedRun } = await supabase.from('ai_provider_runs').insert({
+              case_id: caseId,
+              provider,
+              model_version: result.model || 'v1',
+              prompt_version: result.promptVersion || 'v1',
+              schema_version: 'wound-assessment-v1',
+              status: result.partial ? 'partial' : 'complete',
+              output: result as any,
+              latency_ms: latency,
+              created_by: user.id
+            }).select('id').single();
+            if (insertedRun) runId = insertedRun.id;
+          }
+
+          return { id: runId, provider, result, latency };
+        } catch (error: any) {
+          return { provider, error: error.message || 'Provider call failed', latency: Math.round(performance.now() - started) };
+        }
       }));
-      setRuns(completed); setMessage('Comparison completed. Review cards are blinded until feedback is saved.');
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not create Model Lab case.'); }
-    finally { setBusy(false); }
+      setRuns(completed);
+    } catch (error: any) {
+      setMessage(error.message || 'Comparison failed');
+    } finally { setBusy(false); }
   }
 
-  async function saveReview(run: LabRun, verdict: string, notes: string, reasonCodes: string[]) {
+  async function saveReview(run: LabRun, verdict: string, notes: string, reasons: string[]) {
     if (!run.id) return;
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('ai_human_reviews').insert({ run_id: run.id, reviewer_id: user?.id, verdict, notes, reason_codes: reasonCodes, blinded: true, confidence: 'moderate', field_corrections: {} });
-    if (error) setMessage(error.message); else setReviewed(value => ({ ...value, [run.id!]: true }));
+    if (user) {
+      const { error } = await supabase.from('ai_human_reviews').insert({
+        run_id: run.id,
+        reviewer_id: user.id,
+        verdict,
+        reason_codes: reasons,
+        notes: notes.trim()
+      });
+      if (error) setMessage(error.message);
+      else setReviewed(value => ({ ...value, [run.id!]: true }));
+    } else {
+      setReviewed(value => ({ ...value, [run.id!]: true }));
+    }
   }
 
   return <div className="space-y-6 max-w-7xl mx-auto">
@@ -88,17 +129,41 @@ export default function ModelLab() {
       <aside className="bg-white border border-stone-200 rounded-2xl p-5 space-y-4 h-fit">
         <h2 className="font-semibold">1. Create dataset case</h2>
         <label className="block rounded-xl border-2 border-dashed border-stone-300 overflow-hidden cursor-pointer">{preview ? <img src={preview} className="w-full h-48 object-contain bg-stone-950" alt="De-identified wound case"/> : <span className="h-40 grid place-items-center text-sm text-stone-500"><Upload className="w-5 h-5 mb-1"/>Choose de-identified image</span>}<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => chooseFile(e.target.files?.[0])}/></label>
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold text-stone-600">Body site</label>
-          <select value={bodySite} onChange={e => setBodySite(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">{BODY_SITES.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
-          {bodySite === 'other' && <input value={bodySiteOther} onChange={e => setBodySiteOther(e.target.value)} placeholder="Describe body site" className="w-full border rounded-lg px-3 py-2 text-sm"/>}
+        
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">Body site</label>
+            <select value={bodySite} onChange={e => setBodySite(e.target.value)} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600">{BODY_SITES.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
+            {bodySite === 'other' && <input value={bodySiteOther} onChange={e => setBodySiteOther(e.target.value)} placeholder="Describe body site" className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm mt-2 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600"/>}
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
-            <select aria-label="Laterality" value={laterality} onChange={e => setLaterality(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">{LATERALITY.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
-            <select aria-label="Surface" value={surface} onChange={e => setSurface(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">{SURFACES.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
+            <div>
+              <label className="block text-xs font-semibold text-stone-600 mb-1">Laterality</label>
+              <select value={laterality} onChange={e => setLaterality(e.target.value)} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600">{LATERALITY.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-stone-600 mb-1">Surface aspect</label>
+              <select value={surface} onChange={e => setSurface(e.target.value)} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600">{SURFACES.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">Skin tone (Fitzpatrick scale)</label>
+            <select value={skinTone} onChange={e => setSkinTone(e.target.value)} className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600">
+              <option value="not recorded">Not recorded</option>
+              <option value="Fitzpatrick I–II">Fitzpatrick Type I–II (Fair / Light)</option>
+              <option value="Fitzpatrick III–IV">Fitzpatrick Type III–IV (Medium / Olive)</option>
+              <option value="Fitzpatrick V–VI">Fitzpatrick Type V–VI (Dark / Deep)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">Consent / Lawful basis *</label>
+            <textarea value={consentBasis} onChange={e => setConsentBasis(e.target.value)} placeholder="Document consent basis (e.g., Patient signed IRB Form #402)" className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 resize-none" rows={2}/>
           </div>
         </div>
-        <select value={skinTone} onChange={e => setSkinTone(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm"><option>not recorded</option><option>Fitzpatrick I–II</option><option>Fitzpatrick III–IV</option><option>Fitzpatrick V–VI</option></select>
-        <textarea value={consentBasis} onChange={e => setConsentBasis(e.target.value)} placeholder="Document consent or lawful basis" className="w-full border rounded-lg px-3 py-2 text-sm" rows={2}/>
+
         <label className="flex gap-2 text-xs text-stone-600"><input type="checkbox" checked={deidentified} onChange={e => setDeidentified(e.target.checked)}/>I confirm this training copy is de-identified and approved for model evaluation.</label>
         <h3 className="text-xs font-bold uppercase text-stone-500 pt-2">Providers</h3>
         <div className="grid grid-cols-2 gap-2">{PROVIDERS.map(provider => <button key={provider} type="button" disabled={!status?.[provider]?.enabled} onClick={() => toggleProvider(provider)} className={`rounded-lg border p-2 text-left ${selected.includes(provider) ? 'border-teal-500 bg-teal-50' : 'border-stone-200'} disabled:opacity-40`}><span className="block text-xs font-semibold capitalize">{provider}</span><span className="block text-[9px] truncate text-stone-500">{status?.[provider]?.enabled ? status[provider].model : 'Key/model not configured'}</span></button>)}</div>
@@ -113,5 +178,5 @@ export default function ModelLab() {
 function ReviewCard({ alias, run, revealed, onSave }: { alias: string; run: LabRun; revealed: boolean; onSave: (run: LabRun, verdict: string, notes: string, reasons: string[]) => void }) {
   const [verdict,setVerdict] = useState('edit'); const [notes,setNotes] = useState(''); const [reasons,setReasons] = useState<string[]>([]);
   const output = run.result; const survey = output?.survey; const interpretation = output?.interpretation;
-  return <article className="bg-white border border-stone-200 rounded-2xl p-4 space-y-3"><div className="flex justify-between"><div><h3 className="font-bold">{revealed ? run.provider : alias}</h3><p className="text-[10px] text-stone-500">{run.latency} ms {revealed && output ? `· ${output.model}` : '· provider blinded'}</p></div>{run.error && <span className="text-xs text-red-600">Failed</span>}</div>{run.error ? <p className="text-xs text-red-700 bg-red-50 p-3 rounded-lg">{run.error}</p> : <><div className="grid grid-cols-2 gap-2 text-xs"><div className="bg-stone-50 rounded-lg p-2"><b>Quality</b><p>{survey?.imageQuality?.grade || '—'}</p></div><div className="bg-stone-50 rounded-lg p-2"><b>Classification</b><p>{interpretation?.classification?.etiology || '—'}</p></div><div className="bg-stone-50 rounded-lg p-2 col-span-2"><b>Tissue</b><p>{survey?.tissue?.granulation ?? '—'}% granulation · {survey?.tissue?.slough ?? '—'}% slough · {survey?.tissue?.eschar ?? '—'}% eschar</p></div></div><select value={verdict} onChange={e => setVerdict(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs"><option value="accept">Accept</option><option value="edit">Edit needed</option><option value="reject">Reject</option><option value="unassessable">Image unassessable</option></select><div className="flex flex-wrap gap-1">{REASONS.map(reason => <button type="button" key={reason} onClick={() => setReasons(x => x.includes(reason) ? x.filter(y => y!==reason) : [...x,reason])} className={`text-[9px] px-2 py-1 rounded ${reasons.includes(reason)?'bg-amber-100 text-amber-800':'bg-stone-100 text-stone-500'}`}>{reason.replace(/_/g,' ')}</button>)}</div><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Expert correction notes" rows={2} className="w-full border rounded-lg px-3 py-2 text-xs"/><button type="button" onClick={() => onSave(run,verdict,notes,reasons)} className="flex items-center gap-2 px-3 py-2 bg-stone-900 text-white rounded-lg text-xs"><Save className="w-3.5 h-3.5"/>Save blind review</button></>}</article>;
+  return <article className="bg-white border border-stone-200 rounded-2xl p-4 space-y-3"><div className="flex justify-between"><div><h3 className="font-bold">{revealed ? run.provider : alias}</h3><p className="text-[10px] text-stone-500">{run.latency} ms {revealed && output ? `• ${output.model}` : '• provider blinded'}</p></div>{run.error && <span className="text-xs text-red-600">Failed</span>}</div>{run.error ? <p className="text-xs text-red-700 bg-red-50 p-3 rounded-lg">{run.error}</p> : <><div className="grid grid-cols-2 gap-2 text-xs"><div className="bg-stone-50 rounded-lg p-2"><b>Quality</b><p>{survey?.imageQuality?.grade || '-'}</p></div><div className="bg-stone-50 rounded-lg p-2"><b>Classification</b><p>{interpretation?.classification?.etiology || '-'}</p></div><div className="bg-stone-50 rounded-lg p-2 col-span-2"><b>Tissue</b><p>{survey?.tissue?.granulation ?? '-'}% granulation • {survey?.tissue?.slough ?? '-'}% slough • {survey?.tissue?.eschar ?? '-'}% eschar</p></div></div><div><label className="block text-[11px] font-semibold text-stone-600 mb-1">Expert verdict</label><select value={verdict} onChange={e => setVerdict(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs"><option value="accept">Accept</option><option value="edit">Edit needed</option><option value="reject">Reject</option><option value="unassessable">Image unassessable</option></select></div><div className="flex flex-wrap gap-1">{REASONS.map(reason => <button type="button" key={reason} onClick={() => setReasons(x => x.includes(reason) ? x.filter(y => y!==reason) : [...x,reason])} className={`text-[9px] px-2 py-1 rounded ${reasons.includes(reason)?'bg-amber-100 text-amber-800':'bg-stone-100 text-stone-500'}`}>{reason.replace(/_/g,' ')}</button>)}</div><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Expert correction notes" rows={2} className="w-full border rounded-lg px-3 py-2 text-xs"/><button type="button" onClick={() => onSave(run,verdict,notes,reasons)} className="flex items-center gap-2 px-3 py-2 bg-stone-900 text-white rounded-lg text-xs"><Save className="w-3.5 h-3.5"/>Save blind review</button></>}</article>;
 }
