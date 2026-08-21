@@ -4,7 +4,7 @@ import { signOut } from '../hooks/useAuth';
 import {
   LayoutDashboard, Users, Building2, UserCog,
   Activity, Bell, ClipboardList, LogOut, Menu, X,
-  Search, Shield, ChevronRight, FileText, Sliders, Layers, Heart, FolderOpen
+  Search, Shield, ChevronRight, FileText, Sliders, Layers, Heart, FolderOpen, CloudOff
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import SuperAdminDashboard from './SuperAdminDashboard';
@@ -23,6 +23,7 @@ import ReferenceDataConfig from './ReferenceDataConfig';
 import PatientHomeCheckIn from './PatientHomeCheckIn';
 import AIAnalysisReview from './AIAnalysisReview';
 import DocumentLibrary from './DocumentLibrary';
+import OfflineModeSettings from './OfflineModeSettings';
 
 type Screen =
   | { name: 'dashboard' }
@@ -39,6 +40,7 @@ type Screen =
   | { name: 'reports' }
   | { name: 'rules' }
   | { name: 'reference_data' }
+  | { name: 'offline_settings' }
   | { name: 'home_checkin' }
   | { name: 'ai_review'; assessmentId: string; patientId: string };
 
@@ -420,6 +422,7 @@ function getNavItems(role: string) {
     items.push({ icon: UserCog, label: 'Staff', screen: { name: 'staff' } });
     items.push({ icon: Sliders, label: 'Triage Rules', screen: { name: 'rules' } });
     items.push({ icon: Layers, label: 'Reference Data', screen: { name: 'reference_data' } });
+    items.push({ icon: CloudOff, label: 'Offline Mode', screen: { name: 'offline_settings' } });
   }
 
   if (['super_admin', 'clinic_admin', 'doctor', 'wound_specialist', 'clinician'].includes(role)) {
@@ -451,6 +454,7 @@ function getScreenTitle(screen: Screen): string {
     case 'reports': return 'Outcome Reports';
     case 'rules': return 'Triage Rules Config';
     case 'reference_data': return 'Reference Data Config';
+    case 'offline_settings': return 'Offline Mode';
     case 'home_checkin': return 'Remote Home Check-in';
     case 'documents': return 'Document Library';
     case 'ai_review': return 'AI Analysis Review';
@@ -501,6 +505,8 @@ function renderScreen(
       return <RuleManager />;
     case 'reference_data':
       return <ReferenceDataConfig />;
+    case 'offline_settings':
+      return <OfflineModeSettings organizationId={orgId} />;
     case 'home_checkin':
       return <PatientHomeCheckIn />;
     case 'documents':

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/audit';
 import { X, Save, AlertTriangle, Camera, Upload, Trash2, Image } from 'lucide-react';
 import WoundCamera from './WoundCamera';
+import { enqueueOfflineAssessment, isOfflineEnabled } from '../lib/offline';
 
 interface Props {
   woundId: string;
@@ -138,32 +139,26 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
     const d = parseFloat(form.depth_cm) || 0;
     const area = l * w;
 
+    const assessmentPayload = {
+      wound_id: woundId, organization_id: organizationId, assessment_date: form.assessment_date,
+      length_cm: l, width_cm: w, depth_cm: d, area_cm2: Math.round(area * 100) / 100,
+      granulation_pct: form.granulation_pct, slough_pct: form.slough_pct, eschar_pct: form.eschar_pct,
+      epithelial_pct: form.epithelial_pct, exudate_amount: form.exudate_amount, exudate_type: form.exudate_type,
+      wound_edge: form.wound_edge, periwound: form.periwound, pain_score: form.pain_score, odor: form.odor,
+      tunneling: form.tunneling, undermining: form.undermining, exposed_structures: form.exposed_structures,
+      signs_requiring_review: form.signs_requiring_review, clinical_notes: form.clinical_notes, status: 'pending_review'
+    };
+
     try {
-      const { data: assessment, error: err } = await supabase.from('wound_assessments').insert({
-        wound_id: woundId,
-        organization_id: organizationId,
-        assessment_date: form.assessment_date,
-        length_cm: l,
-        width_cm: w,
-        depth_cm: d,
-        area_cm2: Math.round(area * 100) / 100,
-        granulation_pct: form.granulation_pct,
-        slough_pct: form.slough_pct,
-        eschar_pct: form.eschar_pct,
-        epithelial_pct: form.epithelial_pct,
-        exudate_amount: form.exudate_amount,
-        exudate_type: form.exudate_type,
-        wound_edge: form.wound_edge,
-        periwound: form.periwound,
-        pain_score: form.pain_score,
-        odor: form.odor,
-        tunneling: form.tunneling,
-        undermining: form.undermining,
-        exposed_structures: form.exposed_structures,
-        signs_requiring_review: form.signs_requiring_review,
-        clinical_notes: form.clinical_notes,
-        status: 'pending_review',
-      }).select('id').single();
+      if (!navigator.onLine && isOfflineEnabled(organizationId)) {
+        if (!organizationId) throw new Error('A clinic must be selected before saving offline.');
+        const offlinePhotos = await Promise.all(photos.map(photo => new Promise<{ name: string; type: string; dataUrl: string }>((resolve, reject) => {
+          const reader = new FileReader(); reader.onload = () => resolve({ name: photo.file.name, type: photo.file.type, dataUrl: String(reader.result) }); reader.onerror = () => reject(reader.error); reader.readAsDataURL(photo.file);
+        })));
+        await enqueueOfflineAssessment({ localId: crypto.randomUUID(), organizationId, patientId, woundId, createdAt: new Date().toISOString(), assessment: assessmentPayload, photos: offlinePhotos });
+        alert('Saved securely on this device. WoundTrack will show it as pending until synchronization is available.'); onSaved(); return;
+      }
+      const { data: assessment, error: err } = await supabase.from('wound_assessments').insert(assessmentPayload).select('id').single();
       if (err) throw err;
 
       if (assessment) {
