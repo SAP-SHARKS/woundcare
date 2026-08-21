@@ -8,11 +8,13 @@ export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: U
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
@@ -22,9 +24,14 @@ export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: U
           setLoading(false);
           return;
         }
-        await signUp(email, password, displayName.trim());
+        const result = await signUp(email.trim(), password, displayName.trim());
+        if (!result.session) {
+          setSuccess('Account created. Check your email to confirm the account, then return here to sign in.');
+          setMode('login');
+          setPassword('');
+        }
       } else {
-        await signIn(email, password);
+        await signIn(email.trim(), password);
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -40,6 +47,7 @@ export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: U
       } else {
         setError('Something went wrong. Please try again.');
       }
+    } finally {
       setLoading(false);
     }
   }
@@ -58,7 +66,7 @@ export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: U
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
           <div className="flex border-b border-slate-100">
             <button
-              onClick={() => { setMode('login'); setError(''); }}
+              onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
               className={`flex-1 py-3.5 text-sm font-semibold transition-colors ${
                 mode === 'login'
                   ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50'
@@ -68,7 +76,7 @@ export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: U
               Sign In
             </button>
             <button
-              onClick={() => { setMode('signup'); setError(''); }}
+              onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}
               className={`flex-1 py-3.5 text-sm font-semibold transition-colors ${
                 mode === 'signup'
                   ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50'
@@ -134,6 +142,12 @@ export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: U
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
                 {error}
+              </div>
+            )}
+
+            {success && (
+              <div role="status" className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-xl px-4 py-3">
+                {success}
               </div>
             )}
 

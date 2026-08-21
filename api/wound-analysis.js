@@ -41,8 +41,8 @@ async function verifySupabaseUser(token) {
   const anon = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   if (!url || !anon) throw new Error('Supabase server environment is not configured.');
   const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anon, Authorization: `Bearer ${token}` } });
-  if (!response.ok) return null;
-  return response.json();
+  if (!response.ok) return { user: null, status: response.status };
+  return { user: await response.json(), status: response.status };
 }
 
 async function callClaude(image, context, schema) {
@@ -60,7 +60,7 @@ async function callClaude(image, context, schema) {
       system: `${SYSTEM_PROMPT}\\n\\n${schema}`,
       messages: [{ role: 'user', content: [
         { type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.base64 } },
-        { type: 'text', text: `Clinician-supplied context: body site ${context.bodySite || 'not recorded'}; skin tone ${context.skinTone || 'not recorded'}; exudate ${context.exudate || 'not recorded'}; days since baseline ${context.daysSinceBaseline ?? 'not recorded'}. Assess the photograph. Return only JSON.` },
+        { type: 'text', text: `Clinician-supplied context: body site ${context.bodySite || 'not recorded'}; laterality ${context.laterality || 'not recorded'}; surface ${context.surface || 'not recorded'}; skin tone ${context.skinTone || 'not recorded'}; exudate ${context.exudate || 'not recorded'}; days since baseline ${context.daysSinceBaseline ?? 'not recorded'}. Assess the photograph. Return only JSON.` },
       ] }],
     }),
   });
@@ -70,7 +70,7 @@ async function callClaude(image, context, schema) {
 }
 
 function promptText(context, schema) {
-  return `${SYSTEM_PROMPT}\\n\\n${schema}\\n\\nClinician-supplied context: body site ${context.bodySite || 'not recorded'}; skin tone ${context.skinTone || 'not recorded'}; exudate ${context.exudate || 'not recorded'}; days since baseline ${context.daysSinceBaseline ?? 'not recorded'}. Assess the photograph. Return only JSON.`;
+  return `${SYSTEM_PROMPT}\\n\\n${schema}\\n\\nClinician-supplied context: body site ${context.bodySite || 'not recorded'}; laterality ${context.laterality || 'not recorded'}; surface ${context.surface || 'not recorded'}; skin tone ${context.skinTone || 'not recorded'}; exudate ${context.exudate || 'not recorded'}; days since baseline ${context.daysSinceBaseline ?? 'not recorded'}. Assess the photograph. Return only JSON.`;
 }
 
 async function callOpenAICompatible({ baseUrl, apiKey, model, image, context, schema }) {
@@ -123,8 +123,8 @@ export default async function handler(req, res) {
   if (req.method === 'GET') return res.status(200).json({ providers: Object.fromEntries(['anthropic','openai','gemini','kimi'].map(name => [name, providerConfig(name)])) });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed.' });
   const token = String(req.headers.authorization || '').replace(/^Bearer\\s+/i, '');
-  const user = token && await verifySupabaseUser(token);
-  if (!user) return res.status(401).json({ error: 'A valid signed-in Supabase session is required.' });
+  const verification = token ? await verifySupabaseUser(token) : { user: null, status: 401 };
+  if (!verification.user) return res.status(401).json({ error: verification.status === 401 ? 'Your Supabase session was not accepted by the server. Sign in again; if this continues, verify that Vercel and the website use the same Supabase project.' : 'The server could not validate your Supabase session.' });
   const { image, context = {}, provider = 'anthropic' } = req.body || {};
   const config = providerConfig(provider);
   if (!config.enabled) return res.status(503).json({ error: `${provider} is not configured in Vercel.` });

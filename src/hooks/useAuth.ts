@@ -79,14 +79,17 @@ export function useAuth() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        (async () => {
-          const ctx = await fetchUserContext(session.user);
-          setAuthState({ user: session.user, session, ...ctx, loading: false, error: null });
-        })().catch(error => setAuthState({ user: session.user, session, role: null, organizationId: null, membership: null, loading: false, error: error instanceof Error ? error.message : 'Unable to verify access.' }));
-      } else {
-        setAuthState({ user: null, session: null, role: null, organizationId: null, membership: null, loading: false, error: null });
-      }
+      // Supabase runs this callback while its auth lock is held. Defer database
+      // queries until the callback returns or sign-up/sign-in can deadlock.
+      window.setTimeout(() => {
+        if (session?.user) {
+          fetchUserContext(session.user).then(ctx => {
+            setAuthState({ user: session.user, session, ...ctx, loading: false, error: null });
+          }).catch(error => setAuthState({ user: session.user, session, role: null, organizationId: null, membership: null, loading: false, error: error instanceof Error ? error.message : 'Unable to verify access.' }));
+        } else {
+          setAuthState({ user: null, session: null, role: null, organizationId: null, membership: null, loading: false, error: null });
+        }
+      }, 0);
     });
 
     return () => subscription.unsubscribe();
@@ -101,6 +104,7 @@ export async function signUp(email: string, password: string, displayName: strin
     password,
     options: {
       data: { display_name: displayName },
+      emailRedirectTo: `${window.location.origin}/`,
     },
   });
   if (error) throw error;

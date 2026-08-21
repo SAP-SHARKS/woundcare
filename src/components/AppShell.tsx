@@ -530,7 +530,10 @@ function renderScreen(
   navigate: (s: Screen) => void
 ) {
   const orgId = auth.organizationId;
-  const previewScreens = ['dashboard', 'organizations', 'staff', 'documents', 'alerts', 'tasks', 'audit_logs'] as const;
+  const previewScreens = ['dashboard', 'organizations', 'staff', 'alerts', 'tasks', 'audit_logs'] as const;
+  if (auth.user?.id === 'bypass-user-id' && screen.name === 'documents') {
+    return <DocumentLibrary organizationId={null} previewMode />;
+  }
   if (auth.user?.id === 'bypass-user-id' && previewScreens.some(name => name === screen.name)) {
     return <PreviewDataScreen screen={screen.name as (typeof previewScreens)[number]} />;
   }

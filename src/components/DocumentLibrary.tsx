@@ -17,7 +17,15 @@ interface DocumentItem {
 
 interface Props {
   organizationId: string | null;
+  previewMode?: boolean;
 }
+
+const PREVIEW_DOCUMENTS: DocumentItem[] = [
+  { id: 'preview-photo-protocol', title: 'Wound photography protocol', category: 'reference', description: 'Standardized wound image capture and calibration guidance.', file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', uploaded_by: 'preview', created_at: '2026-08-18T12:00:00Z', profiles: { display_name: 'Dr. R. Nasser' } },
+  { id: 'preview-consent', title: 'Consent for clinical imaging', category: 'clinical', description: 'Clinic consent template for wound photography and image analysis.', file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', uploaded_by: 'preview', created_at: '2026-08-12T12:00:00Z', profiles: { display_name: 'Compliance' } },
+  { id: 'preview-self-care', title: 'Diabetic foot self-care', category: 'reference', description: 'Patient education material for daily foot checks and escalation.', file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', uploaded_by: 'preview', created_at: '2026-07-29T12:00:00Z', profiles: { display_name: 'Nursing team' } },
+  { id: 'preview-referral', title: 'Escalation and referral pathway', category: 'referral', description: 'Clinical escalation thresholds and referral workflow.', file_url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', uploaded_by: 'preview', created_at: '2026-07-17T12:00:00Z', profiles: { display_name: 'Medical director' } },
+];
 
 const CATEGORY_LABELS: Record<string, string> = {
   reference: 'Reference Guidelines',
@@ -27,7 +35,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Other Evidence'
 };
 
-export default function DocumentLibrary({ organizationId }: Props) {
+export default function DocumentLibrary({ organizationId, previewMode = false }: Props) {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,10 +53,15 @@ export default function DocumentLibrary({ organizationId }: Props) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (organizationId) {
+    if (previewMode) {
+      setDocuments(PREVIEW_DOCUMENTS);
+      setLoading(false);
+    } else if (organizationId) {
       fetchDocuments();
+    } else {
+      setLoading(false);
     }
-  }, [organizationId]);
+  }, [organizationId, previewMode]);
 
   async function fetchDocuments() {
     setLoading(true);
@@ -101,6 +114,16 @@ export default function DocumentLibrary({ organizationId }: Props) {
     catch { setError('Document links must be valid HTTPS URLs.'); setSaving(false); return; }
 
     try {
+      if (previewMode) {
+        const mockNewDoc: DocumentItem = {
+          id: `preview-${crypto.randomUUID()}`, title: title.trim(), category,
+          description: description.trim(), file_url: safeUrl.toString(), uploaded_by: 'preview',
+          created_at: new Date().toISOString(), profiles: { display_name: 'Preview user' }
+        };
+        setDocuments(previous => [mockNewDoc, ...previous]);
+        setTitle(''); setCategory('reference'); setDescription(''); setFileUrl(''); setShowUploadForm(false);
+        return;
+      }
       requireUuid(organizationId, 'Clinic');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Your session expired. Sign in again before uploading a document.');
@@ -162,6 +185,11 @@ export default function DocumentLibrary({ organizationId }: Props) {
   const handleDelete = async (id: string, docTitle: string) => {
     if (!confirm(`Are you sure you want to permanently delete document "${docTitle}"?`)) return;
 
+    if (previewMode) {
+      setDocuments(previous => previous.filter(document => document.id !== id));
+      return;
+    }
+
     try {
       const { error: delErr } = await supabase
         .from('documents')
@@ -218,6 +246,12 @@ export default function DocumentLibrary({ organizationId }: Props) {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
           {error}
+        </div>
+      )}
+
+      {previewMode && (
+        <div className="bg-teal-50 border border-teal-200 text-teal-800 text-xs rounded-xl px-4 py-3">
+          <b>Preview mode:</b> changes remain on this device until you leave or refresh the preview session.
         </div>
       )}
 

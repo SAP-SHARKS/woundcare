@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { Camera, CheckCircle, ArrowRight, ArrowLeft, Heart, ShieldAlert, Sparkles, Smile, Frown } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Camera, CheckCircle, ArrowRight, ArrowLeft, Heart, ShieldAlert, Sparkles, Smile, Frown, Upload } from 'lucide-react';
 import WoundCamera from './WoundCamera';
 
 export default function PatientHomeCheckIn() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const uploadRef = useRef<HTMLInputElement>(null);
 
   // Questionnaire states
   const [painLevel, setPainLevel] = useState(3);
@@ -22,6 +23,15 @@ export default function PatientHomeCheckIn() {
     setPhotoPreview(simulatedUrl);
     setShowCamera(false);
     setStep(3); // go to questionnaire
+  };
+
+  const handleImageUpload = (file?: File) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') handleCameraCapture(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmitCheckin = () => {
@@ -130,13 +140,15 @@ export default function PatientHomeCheckIn() {
                 <div className="w-16 h-16 rounded-full bg-teal-50 text-teal-650 flex items-center justify-center mb-3 border border-teal-100 shadow-sm">
                   <Camera className="w-8 h-8" />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowCamera(true)}
-                  className="px-5 py-2.5 bg-teal-600 text-white text-xs font-bold rounded-xl shadow hover:bg-teal-700 transition"
-                >
-                  Open Camera Tool
-                </button>
+                <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
+                  <button type="button" onClick={() => setShowCamera(true)} className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-teal-600 text-white text-xs font-bold rounded-xl shadow hover:bg-teal-700 transition">
+                    <Camera className="w-4 h-4"/> Take photo
+                  </button>
+                  <button type="button" onClick={() => uploadRef.current?.click()} className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white border border-teal-300 text-teal-700 text-xs font-bold rounded-xl hover:bg-teal-50 transition">
+                    <Upload className="w-4 h-4"/> Upload image
+                  </button>
+                </div>
+                <input ref={uploadRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={event => { handleImageUpload(event.target.files?.[0]); event.currentTarget.value = ''; }}/>
               </div>
 
               <button

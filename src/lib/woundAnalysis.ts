@@ -25,8 +25,9 @@ export async function prepareWoundImage(file: File): Promise<{ mediaType: string
 }
 
 export async function runWoundProvider(file: File, provider: string, context: Record<string, unknown> = {}): Promise<WoundAIResult> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error('A real signed-in account is required to call AI providers.');
+  const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+  const session = refreshed.session;
+  if (refreshError || !session) throw new Error('Your session could not be refreshed. Sign out and sign in again.');
   const image = await prepareWoundImage(file);
   const response = await fetch('/api/wound-analysis', { method: 'POST', headers: { 'content-type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ image, context, provider }) });
   const result = await response.json();

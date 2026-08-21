@@ -8,12 +8,25 @@ type ProviderStatus = Record<Provider, { enabled: boolean; model: string }>;
 type LabRun = { id?: string; provider: Provider; result?: WoundAIResult; error?: string; latency: number };
 const PROVIDERS: Provider[] = ['anthropic','openai','gemini','kimi'];
 const REASONS = ['incorrect_visible_finding','missed_visible_finding','hallucinated_finding','invalid_scale','unsafe_inference','wrong_classification','image_unassessable'];
+const BODY_SITES = [
+  ['lower_leg','Lower leg'], ['ankle','Ankle'], ['medial_malleolus','Ankle – medial malleolus'],
+  ['lateral_malleolus','Ankle – lateral malleolus'], ['heel','Foot – heel'],
+  ['plantar_forefoot','Foot – plantar forefoot'], ['dorsal_foot','Foot – dorsal'],
+  ['toe','Foot – toe'], ['sacrum_coccyx','Sacrum / coccyx'], ['hip_trochanter','Hip / trochanter'],
+  ['upper_leg','Upper leg'], ['hand','Hand'], ['arm','Arm'], ['abdomen_trunk','Abdomen / trunk'],
+  ['other','Other'], ['not_recorded','Not recorded'],
+] as const;
+const LATERALITY = [['left','Left'],['right','Right'],['midline','Midline'],['not_applicable','Not applicable'],['unknown','Unknown']] as const;
+const SURFACES = [['anterior','Anterior'],['posterior','Posterior'],['medial','Medial'],['lateral','Lateral'],['plantar','Plantar'],['dorsal','Dorsal'],['not_recorded','Not recorded']] as const;
 
 export default function ModelLab() {
   const [status, setStatus] = useState<ProviderStatus | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState('');
-  const [bodySite, setBodySite] = useState('');
+  const [bodySite, setBodySite] = useState('not_recorded');
+  const [laterality, setLaterality] = useState('unknown');
+  const [surface, setSurface] = useState('not_recorded');
+  const [bodySiteOther, setBodySiteOther] = useState('');
   const [skinTone, setSkinTone] = useState('not recorded');
   const [consentBasis, setConsentBasis] = useState('');
   const [deidentified, setDeidentified] = useState(false);
@@ -43,12 +56,13 @@ export default function ModelLab() {
       const path = `${user.id}/${crypto.randomUUID()}.jpg`;
       const { error: uploadError } = await supabase.storage.from('model-lab').upload(path, file, { contentType: file.type, upsert: false });
       if (uploadError) throw uploadError;
-      const { data: labCase, error: caseError } = await supabase.from('ai_dataset_cases').insert({ image_storage_path: path, body_site: bodySite, skin_tone_band: skinTone, consent_basis: consentBasis.trim(), deidentified: true, status: 'review', created_by: user.id }).select('id').single();
+      const recordedBodySite = bodySite === 'other' ? bodySiteOther.trim() || 'other' : bodySite;
+      const { data: labCase, error: caseError } = await supabase.from('ai_dataset_cases').insert({ image_storage_path: path, body_site: recordedBodySite, skin_tone_band: skinTone, consent_basis: consentBasis.trim(), deidentified: true, status: 'review', created_by: user.id, capture_metadata: { laterality, surface, body_site_code: bodySite } }).select('id').single();
       if (caseError) throw caseError;
       const completed = await Promise.all(selected.map(async provider => {
         const started = performance.now();
         try {
-          const result = await runWoundProvider(file, provider, { bodySite, skinTone });
+          const result = await runWoundProvider(file, provider, { bodySite: recordedBodySite, laterality, surface, skinTone });
           const latency = Math.round(performance.now() - started);
           const { data, error } = await supabase.from('ai_provider_runs').insert({ case_id: labCase.id, provider, model_version: result.model, prompt_version: result.promptVersion, status: result.partial ? 'partial' : 'complete', output: result, latency_ms: latency, created_by: user.id }).select('id').single();
           if (error) throw error;
@@ -74,7 +88,15 @@ export default function ModelLab() {
       <aside className="bg-white border border-stone-200 rounded-2xl p-5 space-y-4 h-fit">
         <h2 className="font-semibold">1. Create dataset case</h2>
         <label className="block rounded-xl border-2 border-dashed border-stone-300 overflow-hidden cursor-pointer">{preview ? <img src={preview} className="w-full h-48 object-contain bg-stone-950" alt="De-identified wound case"/> : <span className="h-40 grid place-items-center text-sm text-stone-500"><Upload className="w-5 h-5 mb-1"/>Choose de-identified image</span>}<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => chooseFile(e.target.files?.[0])}/></label>
-        <input value={bodySite} onChange={e => setBodySite(e.target.value)} placeholder="Body site" className="w-full border rounded-lg px-3 py-2 text-sm"/>
+        <div className="space-y-2">
+          <label className="block text-xs font-semibold text-stone-600">Body site</label>
+          <select value={bodySite} onChange={e => setBodySite(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">{BODY_SITES.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
+          {bodySite === 'other' && <input value={bodySiteOther} onChange={e => setBodySiteOther(e.target.value)} placeholder="Describe body site" className="w-full border rounded-lg px-3 py-2 text-sm"/>}
+          <div className="grid grid-cols-2 gap-2">
+            <select aria-label="Laterality" value={laterality} onChange={e => setLaterality(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">{LATERALITY.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
+            <select aria-label="Surface" value={surface} onChange={e => setSurface(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm">{SURFACES.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
+          </div>
+        </div>
         <select value={skinTone} onChange={e => setSkinTone(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm"><option>not recorded</option><option>Fitzpatrick I–II</option><option>Fitzpatrick III–IV</option><option>Fitzpatrick V–VI</option></select>
         <textarea value={consentBasis} onChange={e => setConsentBasis(e.target.value)} placeholder="Document consent or lawful basis" className="w-full border rounded-lg px-3 py-2 text-sm" rows={2}/>
         <label className="flex gap-2 text-xs text-stone-600"><input type="checkbox" checked={deidentified} onChange={e => setDeidentified(e.target.checked)}/>I confirm this training copy is de-identified and approved for model evaluation.</label>
