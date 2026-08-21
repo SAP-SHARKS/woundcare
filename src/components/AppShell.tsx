@@ -4,7 +4,7 @@ import { signOut } from '../hooks/useAuth';
 import {
   LayoutDashboard, Users, Building2, UserCog,
   Activity, Bell, ClipboardList, LogOut, Menu, X,
-  Search, Shield, ChevronRight, FileText, Sliders, Layers, Heart, FolderOpen, CloudOff
+  Search, Shield, ChevronRight, FileText, Sliders, Layers, Heart, FolderOpen, CloudOff, FlaskConical
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import SuperAdminDashboard from './SuperAdminDashboard';
@@ -27,6 +27,7 @@ import OfflineModeSettings from './OfflineModeSettings';
 import PreviewDataScreen from './PreviewDataScreen';
 import InstallAppButton from './InstallAppButton';
 import { clearOfflineKeyMaterial } from '../lib/offline';
+import ModelLab from './ModelLab';
 
 type Screen =
   | { name: 'dashboard' }
@@ -44,6 +45,7 @@ type Screen =
   | { name: 'rules' }
   | { name: 'reference_data' }
   | { name: 'offline_settings' }
+  | { name: 'model_lab' }
   | { name: 'home_checkin' }
   | { name: 'ai_review'; assessmentId: string; patientId: string };
 
@@ -429,6 +431,7 @@ const SCREEN_SLUGS: Record<Exclude<Screen['name'], 'patient_detail' | 'ai_review
   alerts: 'alerts', tasks: 'tasks', audit_logs: 'audit-log', settings: 'settings',
   documents: 'documents', command_center: 'triage', reports: 'reports', rules: 'rules',
   reference_data: 'reference-data', offline_settings: 'offline', home_checkin: 'home-check-in',
+  model_lab: 'model-lab',
 };
 
 function roleSlug(role: string): string {
@@ -464,6 +467,7 @@ function getNavItems(role: string) {
 
   if (role === 'super_admin') {
     items.push({ icon: Building2, label: 'Organizations', screen: { name: 'organizations' } });
+    items.push({ icon: FlaskConical, label: 'Model Lab', screen: { name: 'model_lab' } });
   }
 
   if (['super_admin', 'clinic_admin', 'doctor', 'wound_specialist', 'nurse', 'clinician'].includes(role)) {
@@ -512,6 +516,7 @@ function getScreenTitle(screen: Screen): string {
     case 'rules': return 'Triage Rules Config';
     case 'reference_data': return 'Reference Data Config';
     case 'offline_settings': return 'Offline Mode';
+    case 'model_lab': return 'Wound AI Model Lab';
     case 'home_checkin': return 'Remote Home Check-in';
     case 'documents': return 'Document Library';
     case 'ai_review': return 'AI Analysis Review';
@@ -568,6 +573,8 @@ function renderScreen(
       return <ReferenceDataConfig />;
     case 'offline_settings':
       return <OfflineModeSettings organizationId={orgId} />;
+    case 'model_lab':
+      return <ModelLab />;
     case 'home_checkin':
       return <PatientHomeCheckIn />;
     case 'documents':

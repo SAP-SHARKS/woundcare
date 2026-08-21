@@ -4,7 +4,7 @@ import { logAudit } from '../lib/audit';
 import {
   ArrowLeft, Plus, MapPin, Calendar, Activity, TrendingDown,
   TrendingUp, Minus, AlertTriangle, FileText, Heart, Stethoscope, User,
-  CheckCircle2, XCircle, Eye, Edit,
+  CheckCircle2, XCircle, Eye, Edit, ClipboardPlus,
 } from 'lucide-react';
 import AssessmentForm from './AssessmentForm';
 import PatientForm from './PatientForm';
@@ -235,6 +235,9 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
               </div>
             </div>
             <div className="flex gap-2 self-start">
+              {activeWounds[0] && <button onClick={() => setAssessmentWoundId(activeWounds[0].id)} className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 text-white text-sm font-semibold rounded-lg hover:bg-teal-800 transition-colors shadow-sm">
+                <ClipboardPlus className="w-4 h-4" /> New Check-in
+              </button>}
               <button onClick={() => setShowEditPatient(true)} className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
                 <Edit className="w-4 h-4 text-slate-500" /> Edit Profile
               </button>
@@ -493,6 +496,8 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
           woundId={assessmentWoundId}
           organizationId={organizationId}
           patientId={patientId}
+          patientName={patient?.full_name || `${patient?.first_name || ''} ${patient?.last_name || ''}`.trim()}
+          woundLabel={parseWoundLocation(wounds.find(w => w.id === assessmentWoundId)?.location_description || '').description || 'Selected wound'}
           onClose={() => setAssessmentWoundId(null)}
           onSaved={() => { setAssessmentWoundId(null); fetchData(); }}
         />

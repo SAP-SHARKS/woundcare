@@ -5,11 +5,14 @@ import { X, Save, AlertTriangle, Camera, Upload, Trash2, Image } from 'lucide-re
 import WoundCamera from './WoundCamera';
 import { enqueueOfflineAssessment, isOfflineEnabled } from '../lib/offline';
 import { requireUuid } from '../lib/validation';
+import WoundAIAnalysisPanel from './WoundAIAnalysisPanel';
 
 interface Props {
   woundId: string;
   organizationId: string | null;
   patientId?: string;
+  patientName?: string;
+  woundLabel?: string;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -24,7 +27,8 @@ interface SelectedFile {
   preview: string;
 }
 
-export default function AssessmentForm({ woundId, organizationId, patientId, onClose, onSaved }: Props) {
+export default function AssessmentForm({ woundId, organizationId, patientId, patientName = 'Selected patient', woundLabel = 'Selected wound', onClose, onSaved }: Props) {
+  const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     assessment_date: new Date().toISOString().slice(0, 10),
     length_cm: '',
@@ -53,6 +57,15 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [analysisId, setAnalysisId] = useState<string | null>(null);
+  const [analysisApplied, setAnalysisApplied] = useState(false);
+  const steps = [
+    ['Patient & wound', 'confirm identity'], ['Guided capture', 'quality gate'],
+    ['Measurements', 'clinician entered'], ['Observations', 'structured fields'],
+    ['Triage & submit', 'rules decide'],
+  ];
+  const urgent = form.exudate_type === 'purulent' && (form.odor || form.pain_score >= 7);
+  const needsReview = urgent || form.pain_score >= 7 || Boolean(form.signs_requiring_review.trim());
 
   async function handleCameraCapture(imageDataUrl: string) {
     try {
@@ -99,6 +112,19 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
       URL.revokeObjectURL(prev[index].preview);
       return prev.filter((_, i) => i !== index);
     });
+  }
+
+  function applyAISuggestions(suggestions: { length?: number; width?: number; granulation?: number; slough?: number; eschar?: number; epithelial?: number }) {
+    setForm(prev => ({
+      ...prev,
+      length_cm: suggestions.length == null ? prev.length_cm : String(suggestions.length),
+      width_cm: suggestions.width == null ? prev.width_cm : String(suggestions.width),
+      granulation_pct: suggestions.granulation ?? prev.granulation_pct,
+      slough_pct: suggestions.slough ?? prev.slough_pct,
+      eschar_pct: suggestions.eschar ?? prev.eschar_pct,
+      epithelial_pct: suggestions.epithelial ?? prev.epithelial_pct,
+    }));
+    setStep(2);
   }
 
   async function uploadPhotos(assessmentId: string): Promise<void> {
@@ -172,6 +198,14 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
 
       if (assessment) {
         await uploadPhotos(assessment.id);
+        if (analysisId) {
+          const { data: { user } } = await supabase.auth.getUser();
+          const { error: linkError } = await supabase.from('wound_ai_analyses').update({
+            assessment_id: assessment.id,
+            ...(analysisApplied ? { status: 'accepted', reviewed_by: user?.id, reviewed_at: new Date().toISOString() } : {}),
+          }).eq('id', analysisId);
+          if (linkError) throw new Error(`Assessment saved, but its AI analysis could not be linked: ${linkError.message}`);
+        }
       }
 
       await logAudit('assessment.create', 'wound_assessment', woundId, organizationId);
@@ -189,9 +223,9 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-slate-50 rounded-2xl shadow-xl w-full max-w-2xl my-6 mx-4">
+      <div className="relative bg-[#f7f5f2] rounded-2xl shadow-xl w-full max-w-6xl my-3 sm:my-6 mx-2 sm:mx-4">
         <div className="sticky top-0 z-10 bg-white rounded-t-2xl border-b border-slate-200 px-5 py-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-900">New Assessment</h2>
+          <div><p className="text-[10px] font-semibold uppercase tracking-wider text-stone-500">Weekly check-in</p><h2 className="text-base font-semibold text-slate-900">{patientName} · {woundLabel}</h2></div>
           <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
             <X className="w-5 h-5 text-slate-400" />
           </button>
@@ -204,8 +238,16 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
             </div>
           )}
 
+          <div className="overflow-x-auto pb-2">
+            <div className="grid grid-cols-5 min-w-[720px] border-t-2 border-stone-200">
+              {steps.map(([title, subtitle], index) => <button key={title} type="button" onClick={() => index < step && setStep(index)} className={`pt-3 pr-3 text-left border-t-2 -mt-0.5 ${index <= step ? 'border-teal-700' : 'border-transparent'}`}><span className={`inline-grid place-items-center w-6 h-6 rounded-full text-xs font-bold mr-2 ${index < step ? 'bg-teal-50 text-teal-700' : index === step ? 'bg-teal-700 text-white' : 'bg-stone-100 text-stone-400'}`}>{index < step ? '✓' : index + 1}</span><span className="text-xs font-semibold text-stone-800">{title}</span><span className="block ml-8 text-[10px] text-stone-500">{subtitle}</span></button>)}
+            </div>
+          </div>
+
+          {step === 0 && <div className="grid lg:grid-cols-[1fr_330px] gap-4"><section className={sectionCls}><h3 className="text-base font-semibold mb-1">Confirm patient & wound</h3><p className="text-xs text-stone-500 mb-4">One wound per check-in. Confirm identity before capturing an image.</p><div className="grid sm:grid-cols-2 gap-3">{[['Patient', patientName], ['Wound', woundLabel], ['Visit type', 'Weekly wound check-in'], ['Assessment date', form.assessment_date]].map(([label,value]) => <div key={label}><span className={labelCls}>{label}</span><div className="min-h-10 px-3 py-2 rounded-lg border border-stone-200 bg-stone-50 text-sm font-medium">{value}</div></div>)}</div></section><aside className={sectionCls}><h3 className="text-sm font-semibold">Safety check</h3><p className="mt-2 text-xs leading-5 text-stone-600">Confirm the patient, wound identity, anatomical site and consent before proceeding. Images and measurements are attached only to this wound episode.</p></aside></div>}
+
           {/* Photo Capture */}
-          <div className={sectionCls}>
+          {step === 1 && <><div className="grid lg:grid-cols-[1fr_330px] gap-4"><div className={sectionCls}>
             <h3 className="text-sm font-semibold text-slate-800 mb-3">Wound Photographs</h3>
 
             {photos.length > 0 && (
@@ -272,9 +314,10 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
                 <Image className="w-3.5 h-3.5" /> Up to 5 photos per assessment. Camera opens on mobile.
               </p>
             )}
-          </div>
+          </div><aside className={sectionCls}><div className="flex justify-between"><h3 className="text-sm font-semibold">Quality gate</h3><span className={`text-xs font-semibold px-2 py-1 rounded ${photos.length ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>{photos.length ? 'Image attached' : 'Awaiting capture'}</span></div><div className="mt-4 space-y-3">{['Wound fully in frame', 'Sharpness / focus reviewed', 'Lighting / glare reviewed', 'Camera perpendicular to wound', 'Scale marker recorded if used'].map(check => <div key={check} className="flex gap-2 text-xs"><span className={photos.length ? 'text-emerald-600' : 'text-stone-300'}>{photos.length ? '✓' : '●'}</span>{check}</div>)}</div><p className="mt-4 pt-4 border-t text-[11px] leading-4 text-stone-500">These are capture prompts, not validated automated image-quality results. The clinician remains responsible for accepting the image.</p></aside></div><WoundAIAnalysisPanel file={photos[0]?.file} organizationId={organizationId} woundId={woundId} patientId={patientId} bodySite={woundLabel} exudate={form.exudate_amount} onApply={(suggestions) => { applyAISuggestions(suggestions); setAnalysisApplied(true); }} onAnalysisStored={setAnalysisId}/></>}
 
           {/* Date */}
+          {step === 2 && <>
           <div className={sectionCls}>
             <h3 className="text-sm font-semibold text-slate-800 mb-3">Assessment Details</h3>
             <div>
@@ -336,6 +379,8 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
           </div>
 
           {/* Exudate & Pain */}
+          </>}
+          {step === 3 && <>
           <div className={sectionCls}>
             <h3 className="text-sm font-semibold text-slate-800 mb-3">Exudate & Symptoms</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -407,14 +452,22 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
           </div>
 
           {/* Actions */}
+          </>}
+
+          {step === 4 && <div className="grid lg:grid-cols-[1fr_330px] gap-4"><div className="space-y-4"><section className={sectionCls}><div className="flex flex-wrap items-center gap-2"><h3 className="text-base font-semibold">Triage result</h3><span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${urgent ? 'bg-red-50 text-red-700 border border-red-200' : needsReview ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>{urgent ? 'URGENT — clinician review' : needsReview ? 'NEEDS REVIEW' : 'ROUTINE'}</span></div><div className="mt-4 space-y-2">{[
+            ['Infection indicators', form.exudate_type === 'purulent' && form.odor, `Purulence ${form.exudate_type === 'purulent' ? 'present' : 'not recorded'} · odor ${form.odor ? 'present' : 'absent'}`],
+            ['Pain escalation', form.pain_score >= 7, `Pain score ${form.pain_score}/10`],
+            ['Clinician-entered warning signs', Boolean(form.signs_requiring_review.trim()), form.signs_requiring_review || 'None entered'],
+          ].map(([label,fired,detail]) => <div key={String(label)} className={`rounded-xl border p-3 ${fired ? 'bg-red-50 border-red-200' : 'bg-stone-50 border-stone-200'}`}><div className="flex gap-2"><span className={fired ? 'text-red-600' : 'text-stone-400'}>●</span><div><p className="text-sm font-semibold">{label}</p><p className="text-xs text-stone-600 mt-1">{detail}</p></div></div></div>)}</div></section><section className="rounded-xl bg-[#124f4b] text-white p-5"><p className="text-[10px] uppercase tracking-widest text-teal-200">Structured visit summary</p><p className="mt-2 text-sm leading-6 text-teal-50">Wound measures {(parseFloat(form.length_cm) || 0).toFixed(1)} × {(parseFloat(form.width_cm) || 0).toFixed(1)} cm with estimated area {((parseFloat(form.length_cm) || 0) * (parseFloat(form.width_cm) || 0)).toFixed(1)} cm². Pain is {form.pain_score}/10. Exudate is {form.exudate_amount}{form.exudate_type ? ` and ${form.exudate_type}` : ''}. This summary is generated from entered fields and requires clinician review.</p></section></div><aside className="space-y-4"><section className={sectionCls}><h3 className="text-sm font-semibold">Escalation flags</h3><p className="mt-2 text-xs leading-5 text-stone-600">{urgent ? 'Features associated with local infection were entered. Urgent clinical correlation is indicated; the image alone does not diagnose infection.' : needsReview ? 'One or more entered findings require clinician review.' : 'No configured escalation rule fired from the entered fields.'}</p></section><section className={sectionCls}><h3 className="text-sm font-semibold">Not obtainable from a photograph</h3><div className="mt-2 flex flex-wrap gap-1.5">{['Depth', 'Undermining', 'Tunnelling', 'Induration', 'Temperature', 'Odour', 'Pain', 'Blanchability'].map(x => <span key={x} className="px-2 py-1 rounded bg-stone-100 text-[10px] text-stone-600">{x} · bedside</span>)}</div></section></aside></div>}
+
           <div className="flex items-center justify-between pt-2 pb-2">
             <div className="text-xs text-slate-400">{uploadProgress}</div>
             <div className="flex gap-2">
-              <button type="button" onClick={onClose} className="px-4 py-2.5 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500/30 rounded-lg transition-colors">Cancel</button>
-              <button type="submit" disabled={saving} className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 active:bg-teal-800 transition-colors shadow-sm disabled:opacity-50">
+              <button type="button" onClick={step === 0 ? onClose : () => setStep(s => s - 1)} className="px-4 py-2.5 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500/30 rounded-lg transition-colors">{step === 0 ? 'Save draft & exit' : 'Back'}</button>
+              {step < 4 ? <button type="button" onClick={() => setStep(s => Math.min(4, s + 1))} disabled={step === 1 && photos.length === 0} className="px-5 py-2.5 bg-teal-700 text-white text-sm font-semibold rounded-lg hover:bg-teal-800 disabled:bg-stone-300 disabled:cursor-not-allowed">Continue</button> : <button type="submit" disabled={saving} className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 active:bg-teal-800 transition-colors shadow-sm disabled:opacity-50">
                 {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
                 {saving ? 'Saving...' : 'Save Assessment'}
-              </button>
+              </button>}
             </div>
           </div>
         </form>
