@@ -52,10 +52,15 @@ export default function AssessmentForm({ woundId, organizationId, patientId, onC
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [showCamera, setShowCamera] = useState(false);
 
-  function handleCameraCapture(simulatedUrl: string) {
-    const dummyFile = new File([new Blob()], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
-    setPhotos(prev => [...prev, { file: dummyFile, preview: simulatedUrl }]);
-    setShowCamera(false);
+  async function handleCameraCapture(imageDataUrl: string) {
+    try {
+      const blob = await (await fetch(imageDataUrl)).blob();
+      const file = new File([blob], `capture-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
+      setPhotos(prev => [...prev, { file, preview: imageDataUrl }]);
+      setShowCamera(false);
+    } catch {
+      setError('The captured image could not be prepared. Please retake it or upload an image.');
+    }
   }
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {

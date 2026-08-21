@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Camera, RefreshCw, CheckCircle, ShieldAlert, Sparkles } from 'lucide-react';
 
 interface Props {
@@ -7,6 +7,10 @@ interface Props {
 }
 
 export default function WoundCamera({ onCapture, onClose }: Props) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState('');
   // Guidance simulation states
   const [distance, setDistance] = useState<'too_far' | 'correct' | 'too_close'>('too_far');
   const [angle, setAngle] = useState<'tilted' | 'aligned'>('tilted');
@@ -16,6 +20,27 @@ export default function WoundCamera({ onCapture, onClose }: Props) {
 
   const [captured, setCaptured] = useState(false);
   const [simulatedPhoto, setSimulatedPhoto] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    async function startCamera() {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraError('Live camera is not supported in this browser. Use the device camera option below.');
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+        if (!active) { stream.getTracks().forEach(track => track.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
+      } catch (error) {
+        const denied = error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'SecurityError');
+        setCameraError(denied ? 'Camera permission was denied. Allow camera access or use the device camera option.' : 'The camera could not be started. It requires HTTPS or localhost.');
+      }
+    }
+    void startCamera();
+    return () => { active = false; streamRef.current?.getTracks().forEach(track => track.stop()); };
+  }, []);
 
   // Auto-calibrate guides over time to simulate aligning the camera
   useEffect(() => {
@@ -32,17 +57,30 @@ export default function WoundCamera({ onCapture, onClose }: Props) {
   }, []);
 
   const handleCapture = () => {
-    // Generate a high fidelity mock wound photo
-    // A nice clean base64 image or placeholder representing Mohammed Al-Hassan's wound
-    setSimulatedPhoto('https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=600');
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) { setCameraError('The camera is still starting. Please wait a moment and try again.'); return; }
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    setSimulatedPhoto(canvas.toDataURL('image/jpeg', 0.9));
     setCaptured(true);
   };
 
   const handleUsePhoto = () => {
     if (simulatedPhoto) {
+      streamRef.current?.getTracks().forEach(track => track.stop());
       onCapture(simulatedPhoto);
     }
   };
+
+  const handleFallbackFile = (file?: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { if (typeof reader.result === 'string') { setSimulatedPhoto(reader.result); setCaptured(true); setCameraError(''); } };
+    reader.readAsDataURL(file);
+  };
+
+  const closeCamera = () => { streamRef.current?.getTracks().forEach(track => track.stop()); onClose(); };
 
   const handleRetake = () => {
     setCaptured(false);
@@ -65,7 +103,7 @@ export default function WoundCamera({ onCapture, onClose }: Props) {
           <span className="font-semibold text-slate-100 flex items-center gap-1">
             <Camera className="w-3.5 h-3.5 text-teal-400" /> Standardized Camera
           </span>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-200 font-medium">Cancel</button>
+          <button onClick={closeCamera} className="text-slate-400 hover:text-slate-200 font-medium">Cancel</button>
         </div>
 
         {/* Live Camera View Simulation */}
@@ -75,6 +113,7 @@ export default function WoundCamera({ onCapture, onClose }: Props) {
             <img src={simulatedPhoto} alt="Captured clinical evidence" className="w-full h-full object-cover" />
           ) : (
             // Camera grid overlay
+            <><video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 border border-slate-800/40 grid grid-cols-3 grid-rows-3 z-10 pointer-events-none">
               <div className="border-r border-b border-slate-700/20" />
               <div className="border-r border-b border-slate-700/20" />
@@ -85,7 +124,7 @@ export default function WoundCamera({ onCapture, onClose }: Props) {
               <div className="border-r border-slate-700/20" />
               <div className="border-r border-slate-700/20" />
               <div className="bg-transparent" />
-            </div>
+            </div></>
           )}
 
           {/* Target Boundary Guide Box */}
@@ -166,6 +205,7 @@ export default function WoundCamera({ onCapture, onClose }: Props) {
             </div>
           ) : (
             <>
+              {cameraError && <div className="w-full bg-red-950/80 border border-red-900 text-red-200 rounded-xl px-3 py-2 text-[10px] leading-relaxed">{cameraError}</div>}
               {/* Correction instruction warning banner */}
               {!isReadyToCapture && (
                 <div className="w-full bg-amber-950/80 border border-amber-900 text-amber-300 rounded-xl px-3 py-2 flex items-start gap-2 text-[10px] leading-relaxed">
@@ -184,6 +224,8 @@ export default function WoundCamera({ onCapture, onClose }: Props) {
               >
                 <div className="w-full h-full rounded-full bg-teal-600 hover:bg-teal-700" />
               </button>
+              <button type="button" onClick={() => fileRef.current?.click()} className="text-[11px] font-semibold text-teal-300 hover:text-teal-200">Use device camera or choose image</button>
+              <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleFallbackFile(e.target.files?.[0])} />
             </>
           )}
         </div>
