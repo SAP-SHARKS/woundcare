@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/c/:clinic/:path*", "destination": "/index.html" },
     { "source": "/doctor/:path*", "destination": "/index.html" },
     { "source": "/nurse/:path*", "destination": "/index.html" },
     { "source": "/patient/:path*", "destination": "/index.html" },

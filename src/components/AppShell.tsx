@@ -28,6 +28,7 @@ import PreviewDataScreen from './PreviewDataScreen';
 import InstallAppButton from './InstallAppButton';
 import { clearOfflineKeyMaterial } from '../lib/offline';
 import ModelLab from './ModelLab';
+import ClinicSettings from './ClinicSettings';
 
 type Screen =
   | { name: 'dashboard' }
@@ -82,6 +83,8 @@ export default function AppShell({ auth, onExitPreview }: Props) {
   const [searchResults, setSearchResults] = useState<PatientResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [clinicIdentity, setClinicIdentity] = useState({ name: 'Wound Clinic', slug: '', logo_url: '' });
+  const [clinicIdentityVersion, setClinicIdentityVersion] = useState(0);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const mobileSearchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -89,12 +92,19 @@ export default function AppShell({ auth, onExitPreview }: Props) {
   const navItems = getNavItems(role);
 
   useEffect(() => {
+    if (!auth.organizationId) return;
+    void supabase.from('organizations').select('name,slug,logo_url').eq('id', auth.organizationId).maybeSingle().then(({ data }) => {
+      if (data) setClinicIdentity({ name: data.name || 'Wound Clinic', slug: data.slug || '', logo_url: data.logo_url || '' });
+    });
+  }, [auth.organizationId, clinicIdentityVersion]);
+
+  useEffect(() => {
     const syncFromUrl = () => setScreen(screenFromPath(window.location.pathname, role));
     window.addEventListener('popstate', syncFromUrl);
-    const canonicalPath = pathForScreen(screenFromPath(window.location.pathname, role), role);
+    const canonicalPath = pathForScreen(screenFromPath(window.location.pathname, role), role, clinicIdentity.slug);
     if (window.location.pathname !== canonicalPath) window.history.replaceState({}, '', canonicalPath);
     return () => window.removeEventListener('popstate', syncFromUrl);
-  }, [role]);
+  }, [role, clinicIdentity.slug]);
 
   async function handleSignOut() {
     clearOfflineKeyMaterial();
@@ -196,7 +206,7 @@ export default function AppShell({ auth, onExitPreview }: Props) {
 
   function navigate(s: Screen) {
     setScreen(s);
-    const nextPath = pathForScreen(s, role);
+    const nextPath = pathForScreen(s, role, clinicIdentity.slug);
     if (window.location.pathname !== nextPath) window.history.pushState({}, '', nextPath);
     setSidebarOpen(false);
   }
@@ -233,12 +243,10 @@ export default function AppShell({ auth, onExitPreview }: Props) {
       <aside className="hidden lg:flex lg:flex-col lg:w-[238px] bg-[#fffefc] border-r border-stone-200 fixed inset-y-0 z-30">
         <div className="px-5 py-5 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center">
-              <Activity className="w-4.5 h-4.5 text-white" />
-            </div>
+            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center overflow-hidden">{clinicIdentity.logo_url?<img src={clinicIdentity.logo_url} alt="" className="w-full h-full object-contain bg-white"/>:<Activity className="w-4.5 h-4.5 text-white" />}</div>
             <div>
               <h1 className="text-[14.5px] font-bold text-stone-900 tracking-[-.2px]">WoundTrack</h1>
-              <p className="text-[10px] font-medium text-stone-400">Al Nakheel Wound Clinic</p>
+              <p className="text-[10px] font-medium text-stone-400 truncate max-w-[155px]">{clinicIdentity.name}</p>
             </div>
           </div>
         </div>
@@ -419,7 +427,7 @@ export default function AppShell({ auth, onExitPreview }: Props) {
         </header>
 
         <div className="p-4 sm:p-7 pb-11">
-          {renderScreen(screen, auth, navigate)}
+          {renderScreen(screen, auth, navigate, () => setClinicIdentityVersion((version) => version + 1))}
         </div>
       </main>
     </div>
@@ -438,8 +446,8 @@ function roleSlug(role: string): string {
   return role.replace(/_/g, '-');
 }
 
-function pathForScreen(screen: Screen, role: string): string {
-  const base = `/${roleSlug(role)}`;
+function pathForScreen(screen: Screen, role: string, clinicSlug = ''): string {
+  const base = role === 'super_admin' ? '/super-admin' : clinicSlug ? `/c/${encodeURIComponent(clinicSlug)}` : `/${roleSlug(role)}`;
   if (screen.name === 'patient_detail') return `${base}/patients/${encodeURIComponent(screen.patientId)}`;
   if (screen.name === 'ai_review') return `${base}/ai-review/${encodeURIComponent(screen.assessmentId)}/${encodeURIComponent(screen.patientId)}`;
   return `${base}/${SCREEN_SLUGS[screen.name]}`;
@@ -447,12 +455,14 @@ function pathForScreen(screen: Screen, role: string): string {
 
 function screenFromPath(pathname: string, role: string): Screen {
   const segments = pathname.split('/').filter(Boolean).map(segment => decodeURIComponent(segment));
-  if (segments[0] !== roleSlug(role)) return { name: role === 'patient' ? 'home_checkin' : 'dashboard' };
-  if (segments[1] === 'patients' && segments[2]) return { name: 'patient_detail', patientId: segments[2] };
-  if (segments[1] === 'ai-review' && segments[2] && segments[3]) {
-    return { name: 'ai_review', assessmentId: segments[2], patientId: segments[3] };
+  const offset = segments[0] === 'c' && segments[1] ? 2 : 1;
+  const validRoot = offset === 2 || segments[0] === roleSlug(role);
+  if (!validRoot) return { name: role === 'patient' ? 'home_checkin' : 'dashboard' };
+  if (segments[offset] === 'patients' && segments[offset + 1]) return { name: 'patient_detail', patientId: segments[offset + 1] };
+  if (segments[offset] === 'ai-review' && segments[offset + 1] && segments[offset + 2]) {
+    return { name: 'ai_review', assessmentId: segments[offset + 1], patientId: segments[offset + 2] };
   }
-  const match = Object.entries(SCREEN_SLUGS).find(([, slug]) => slug === segments[1]);
+  const match = Object.entries(SCREEN_SLUGS).find(([, slug]) => slug === segments[offset]);
   return match ? { name: match[0] } as Screen : { name: role === 'patient' ? 'home_checkin' : 'dashboard' };
 }
 
@@ -480,6 +490,7 @@ function getNavItems(role: string) {
   }
 
   if (['super_admin', 'clinic_admin'].includes(role)) {
+    items.push({ icon: Building2, label: 'Clinic Settings', screen: { name: 'settings' } });
     items.push({ icon: UserCog, label: 'Staff', screen: { name: 'staff' } });
     items.push({ icon: Sliders, label: 'Triage Rules', screen: { name: 'rules' } });
     items.push({ icon: Layers, label: 'Reference Data', screen: { name: 'reference_data' } });
@@ -527,7 +538,8 @@ function getScreenTitle(screen: Screen): string {
 function renderScreen(
   screen: Screen,
   auth: AuthState,
-  navigate: (s: Screen) => void
+  navigate: (s: Screen) => void,
+  refreshClinicIdentity: () => void
 ) {
   const orgId = auth.organizationId;
   const previewScreens = ['dashboard', 'organizations', 'staff', 'alerts', 'tasks', 'audit_logs'] as const;
@@ -558,6 +570,8 @@ function renderScreen(
       return <TasksView organizationId={orgId} />;
     case 'audit_logs':
       return <AuditLogView organizationId={orgId} />;
+    case 'settings':
+      return <ClinicSettings organizationId={orgId} onOrganizationUpdated={refreshClinicIdentity} />;
     case 'command_center':
       return (
         <CommandCenter

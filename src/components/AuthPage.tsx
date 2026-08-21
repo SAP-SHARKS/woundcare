@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Activity, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { signUp, signIn, type UserRole } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
+import InstallAppButton from './InstallAppButton';
 
 export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: UserRole) => void; allowBypass: boolean }) {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -10,6 +12,17 @@ export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: U
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  async function handleForgotPassword() {
+    if (!email.trim()) { setError('Enter your email address first.'); return; }
+    setLoading(true); setError(''); setSuccess('');
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/?recovery=1`,
+    });
+    setLoading(false);
+    if (resetError) setError(resetError.message);
+    else setSuccess('If that account exists, a password reset link has been sent.');
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,6 +67,7 @@ export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: U
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-slate-100 flex items-center justify-center p-4">
+      <InstallAppButton />
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-teal-600 rounded-2xl mb-4 shadow-lg shadow-teal-200">
@@ -124,7 +138,10 @@ export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: U
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-slate-700">Password</label>
+                {mode === 'login' && <button type="button" onClick={handleForgotPassword} className="text-xs font-semibold text-teal-700 hover:underline">Forgot password?</button>}
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input

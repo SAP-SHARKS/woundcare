@@ -39,6 +39,7 @@ export default function StaffManager({ organizationId }: Props) {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [searchEmail, setSearchEmail] = useState('');
   const [searchResult, setSearchResult] = useState<{ id: string; display_name: string; email: string } | null>(null);
@@ -46,6 +47,34 @@ export default function StaffManager({ organizationId }: Props) {
   const [selectedRole, setSelectedRole] = useState<string>('nurse');
   const [saving, setSaving] = useState(false);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+  const [adminAction, setAdminAction] = useState('');
+
+  const runAdminAction = async (action: 'invite' | 'password_reset', email: string) => {
+    if (!organizationId) return;
+    setAdminAction(`${action}:${email}`);
+    setError(''); setNotice('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Please sign in again before managing staff accounts.');
+      const response = await fetch('/api/clinic-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          action, organizationId, email, role: selectedRole,
+          redirectTo: `${window.location.origin}/`,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'Staff action failed.');
+      setNotice(payload.message);
+      if (action === 'invite') { closeModal(); await fetchStaff(); }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Staff action failed.');
+    } finally {
+      setAdminAction('');
+      setActionMenuId(null);
+    }
+  };
 
   const fetchStaff = useCallback(async () => {
     if (!organizationId) return;
@@ -93,7 +122,12 @@ export default function StaffManager({ organizationId }: Props) {
   };
 
   const updateMembership = async (id: string, updates: Record<string, string>) => {
-    const { error: err } = await supabase.from('organization_memberships').update(updates).eq('id', id);
+    const timestamps = updates.status === 'inactive'
+      ? { access_revoked_at: new Date().toISOString() }
+      : updates.status === 'active'
+        ? { activated_at: new Date().toISOString(), access_revoked_at: null }
+        : {};
+    const { error: err } = await supabase.from('organization_memberships').update({ ...updates, ...timestamps }).eq('id', id);
     setActionMenuId(null);
     if (err) setError(err.message); else fetchStaff();
   };
@@ -127,9 +161,10 @@ export default function StaffManager({ organizationId }: Props) {
           <button onClick={() => setError('')}><X className="w-4 h-4" /></button>
         </div>
       )}
+      {notice && <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-lg px-4 py-3">{notice}</div>}
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-6 h-6 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
@@ -178,9 +213,14 @@ export default function StaffManager({ organizationId }: Props) {
                           </button>
                         ))}
                         <div className="border-t border-slate-100 my-1" />
+                        <button onClick={() => runAdminAction('password_reset', m.email)}
+                          disabled={adminAction === `password_reset:${m.email}`}
+                          className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                          Send password reset
+                        </button>
                         {m.status === 'active' ? (
                           <button onClick={() => updateMembership(m.membership_id, { status: 'inactive' })}
-                            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50">Deactivate</button>
+                            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50">Revoke clinic access</button>
                         ) : (
                           <button onClick={() => updateMembership(m.membership_id, { status: 'active' })}
                             className="w-full text-left px-3 py-2 text-sm text-emerald-600 hover:bg-emerald-50">Reactivate</button>
@@ -230,8 +270,14 @@ export default function StaffManager({ organizationId }: Props) {
                 </div>
               )}
               {searchStatus === 'not_found' && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg px-4 py-3">
-                  No user found with that email. They need to create an account first.
+                <div className="bg-amber-50 border border-amber-200 text-amber-900 text-sm rounded-lg px-4 py-3 space-y-3">
+                  <p>No existing account was found. Send a secure Supabase invitation instead.</p>
+                  <label className="block text-xs font-semibold">Role after administrator activation</label>
+                  <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}
+                    className="w-full px-3 py-2 border border-amber-300 rounded-lg bg-white">
+                    {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+                  </select>
+                  <p className="text-xs">Invited accounts remain inactive until a clinic administrator activates them.</p>
                 </div>
               )}
               {searchStatus === 'found' && searchResult && (
@@ -269,6 +315,13 @@ export default function StaffManager({ organizationId }: Props) {
                   : <UserPlus className="w-4 h-4" />}
                 Add to Team
               </button>
+              {searchStatus === 'not_found' && (
+                <button onClick={() => runAdminAction('invite', searchEmail)}
+                  disabled={!searchEmail.trim() || adminAction.startsWith('invite:')}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50">
+                  <Mail className="w-4 h-4" /> Send invitation
+                </button>
+              )}
             </div>
           </div>
         </div>

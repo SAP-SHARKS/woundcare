@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { signOut, useAuth, type UserRole } from './hooks/useAuth';
 import AuthPage from './components/AuthPage';
+import PasswordRecovery from './components/PasswordRecovery';
 import AppShell from './components/AppShell';
 
 export default function App() {
@@ -8,6 +9,7 @@ export default function App() {
   const [bypassAuth, setBypassAuth] = useState<any>(null);
 
   const activeAuth = bypassAuth || auth;
+  const isRecovery = window.location.search.includes('recovery=1') || window.location.hash.includes('type=recovery');
 
   const handleBypass = (role: UserRole) => {
     setBypassAuth({
@@ -34,6 +36,7 @@ export default function App() {
     });
   };
 
+  if (isRecovery) return <PasswordRecovery />;
   if (activeAuth.loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">

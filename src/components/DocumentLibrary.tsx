@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/audit';
-import { FileText, Plus, Search, Trash2, Eye, Filter, X, Check, FolderOpen } from 'lucide-react';
+import { FileText, Plus, Search, Trash2, Eye, Filter, X, Check, FolderOpen, UploadCloud } from 'lucide-react';
 import { requireUuid } from '../lib/validation';
 
 interface DocumentItem {
@@ -50,6 +50,7 @@ export default function DocumentLibrary({ organizationId, previewMode = false }:
   const [category, setCategory] = useState('reference');
   const [description, setDescription] = useState('');
   const [fileUrl, setFileUrl] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -108,39 +109,56 @@ export default function DocumentLibrary({ organizationId, previewMode = false }:
 
     setSaving(true);
     setError(null);
-    const finalUrl = fileUrl.trim() || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
-    let safeUrl: URL;
-    try { safeUrl = new URL(finalUrl); if (safeUrl.protocol !== 'https:') throw new Error(); }
-    catch { setError('Document links must be valid HTTPS URLs.'); setSaving(false); return; }
+    if (!selectedFile && !fileUrl.trim()) { setError('Choose a document to upload or provide an HTTPS document URL.'); setSaving(false); return; }
+    if (selectedFile && selectedFile.size > 20 * 1024 * 1024) { setError('Documents must be 20 MB or smaller.'); setSaving(false); return; }
+    let finalUrl = fileUrl.trim();
+    if (finalUrl) {
+      try { const safeUrl = new URL(finalUrl); if (safeUrl.protocol !== 'https:') throw new Error(); finalUrl = safeUrl.toString(); }
+      catch { setError('Document links must be valid HTTPS URLs.'); setSaving(false); return; }
+    }
 
     try {
       if (previewMode) {
         const mockNewDoc: DocumentItem = {
           id: `preview-${crypto.randomUUID()}`, title: title.trim(), category,
-          description: description.trim(), file_url: safeUrl.toString(), uploaded_by: 'preview',
+          description: description.trim(), file_url: selectedFile ? URL.createObjectURL(selectedFile) : finalUrl, uploaded_by: 'preview',
           created_at: new Date().toISOString(), profiles: { display_name: 'Preview user' }
         };
         setDocuments(previous => [mockNewDoc, ...previous]);
-        setTitle(''); setCategory('reference'); setDescription(''); setFileUrl(''); setShowUploadForm(false);
+        setTitle(''); setCategory('reference'); setDescription(''); setFileUrl(''); setSelectedFile(null); setShowUploadForm(false);
         return;
       }
       requireUuid(organizationId, 'Clinic');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Your session expired. Sign in again before uploading a document.');
+      let uploadedPath = '';
+      if (selectedFile) {
+        const cleanName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+        uploadedPath = `${organizationId}/${user.id}/${crypto.randomUUID()}-${cleanName}`;
+        const { error: uploadError } = await supabase.storage.from('clinic-documents').upload(uploadedPath, selectedFile, {
+          contentType: selectedFile.type || 'application/octet-stream',
+          upsert: false,
+        });
+        if (uploadError) throw uploadError;
+        finalUrl = `storage://clinic-documents/${uploadedPath}`;
+      }
       const { data, error: insErr } = await supabase
         .from('documents')
         .insert({
           title: title.trim(),
           category,
           description: description.trim(),
-          file_url: safeUrl.toString(),
+          file_url: finalUrl,
           organization_id: organizationId,
           uploaded_by: user.id,
         })
         .select()
         .single();
 
-      if (insErr) throw insErr;
+      if (insErr) {
+        if (uploadedPath) await supabase.storage.from('clinic-documents').remove([uploadedPath]);
+        throw insErr;
+      }
 
       if (data) {
         await logAudit('document.create', 'document', data.id, organizationId, { title: data.title });
@@ -150,6 +168,7 @@ export default function DocumentLibrary({ organizationId, previewMode = false }:
       setCategory('reference');
       setDescription('');
       setFileUrl('');
+      setSelectedFile(null);
       setShowUploadForm(false);
       fetchDocuments();
     } catch (err: any) {
@@ -160,7 +179,7 @@ export default function DocumentLibrary({ organizationId, previewMode = false }:
           title: title.trim(),
           category,
           description: description.trim(),
-          file_url: safeUrl.toString(),
+          file_url: selectedFile ? URL.createObjectURL(selectedFile) : finalUrl,
           uploaded_by: 'bypass-user-id',
           created_at: new Date().toISOString(),
           profiles: { display_name: 'Bypass Super Admin' }
@@ -171,6 +190,7 @@ export default function DocumentLibrary({ organizationId, previewMode = false }:
         setCategory('reference');
         setDescription('');
         setFileUrl('');
+        setSelectedFile(null);
         setShowUploadForm(false);
         // Log simulated audit
         await logAudit('document.create', 'document', mockNewDoc.id, organizationId, { title: mockNewDoc.title, note: 'simulated bypass' });
@@ -198,6 +218,13 @@ export default function DocumentLibrary({ organizationId, previewMode = false }:
 
       if (delErr) throw delErr;
 
+      const document = documents.find(item => item.id === id);
+      if (document?.file_url.startsWith('storage://clinic-documents/')) {
+        const path = document.file_url.replace('storage://clinic-documents/', '');
+        const { error: storageError } = await supabase.storage.from('clinic-documents').remove([path]);
+        if (storageError) setError(`Document record was removed, but the stored file could not be deleted: ${storageError.message}`);
+      }
+
       await logAudit('document.delete', 'document', id, organizationId, { title: docTitle });
       fetchDocuments();
     } catch (err: any) {
@@ -214,7 +241,16 @@ export default function DocumentLibrary({ organizationId, previewMode = false }:
   const handleView = async (id: string, docTitle: string, url: string) => {
     // Audit log document view
     await logAudit('document.view', 'document', id, organizationId, { title: docTitle });
-    try { const safeUrl = new URL(url); if (safeUrl.protocol !== 'https:') throw new Error(); window.open(safeUrl.toString(), '_blank', 'noopener,noreferrer'); }
+    try {
+      if (url.startsWith('storage://clinic-documents/')) {
+        const path = url.replace('storage://clinic-documents/', '');
+        const { data, error: signedError } = await supabase.storage.from('clinic-documents').createSignedUrl(path, 300);
+        if (signedError) throw signedError;
+        window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      const safeUrl = new URL(url); if (safeUrl.protocol !== 'https:') throw new Error(); window.open(safeUrl.toString(), '_blank', 'noopener,noreferrer');
+    }
     catch { setError('This document link was blocked because it is not a valid HTTPS URL.'); }
   };
 
@@ -294,10 +330,22 @@ export default function DocumentLibrary({ organizationId, previewMode = false }:
           </div>
 
           <div>
-            <label className="block text-[10px] font-semibold text-slate-600 mb-1">Document URL (PDF/Scan attachment)</label>
+            <label className="block text-[10px] font-semibold text-slate-600 mb-1">Upload document</label>
+            <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white px-4 py-5 text-center hover:border-teal-500 hover:bg-teal-50/30">
+              <UploadCloud className="w-7 h-7 text-teal-600 mb-2" />
+              <span className="text-xs font-semibold text-slate-700">{selectedFile ? selectedFile.name : 'Choose a PDF, Word document, or image'}</span>
+              <span className="text-[10px] text-slate-500 mt-1">{selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : 'Maximum file size: 20 MB'}</span>
+              <input type="file" className="hidden" accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp" onChange={event => setSelectedFile(event.target.files?.[0] || null)} />
+            </label>
+          </div>
+
+          <div className="flex items-center gap-3"><span className="h-px flex-1 bg-slate-200"/><span className="text-[10px] font-semibold text-slate-400">OR LINK TO AN EXISTING FILE</span><span className="h-px flex-1 bg-slate-200"/></div>
+
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-600 mb-1">Document URL (optional)</label>
             <input
               type="url"
-              placeholder="e.g. https://example.com/patient-file.pdf (Leave blank for default mock document)"
+              placeholder="https://example.com/patient-file.pdf"
               value={fileUrl}
               onChange={e => setFileUrl(e.target.value)}
               className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
@@ -326,7 +374,7 @@ export default function DocumentLibrary({ organizationId, previewMode = false }:
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-1 px-4 py-2 bg-teal-650 text-white text-xs font-semibold rounded-lg hover:bg-teal-700 transition"
+              className="flex items-center gap-1 px-4 py-2 bg-teal-700 text-white text-xs font-semibold rounded-lg hover:bg-teal-800 transition disabled:opacity-50"
             >
               <Check className="w-3.5 h-3.5" /> {saving ? 'Adding...' : 'Save Document'}
             </button>
