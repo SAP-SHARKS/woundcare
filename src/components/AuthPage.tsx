@@ -155,7 +155,8 @@ export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: U
 
           {/* Sandbox Bypass Panel */}
           {allowBypass && <div className="px-6 pb-6 pt-2 border-t border-slate-50 bg-slate-50/20">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block text-center mb-2.5">Developer Sandbox Bypass</span>
+            <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block text-center mb-1">Temporary Role Preview</span>
+            <p className="text-[10px] text-slate-500 text-center mb-2.5">For interface testing only. Preview sessions do not represent real Supabase permissions.</p>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -188,6 +189,30 @@ export default function AuthPage({ onBypass, allowBypass }: { onBypass: (role: U
                 className="py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold rounded-lg text-slate-700 transition shadow-sm"
               >
                 Doctor Role
+              </button>
+              <button
+                type="button"
+                onClick={() => onBypass('wound_specialist')}
+                id="bypass-wound-specialist"
+                className="py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold rounded-lg text-slate-700 transition shadow-sm"
+              >
+                Wound Specialist
+              </button>
+              <button
+                type="button"
+                onClick={() => onBypass('clinician')}
+                id="bypass-clinician"
+                className="py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold rounded-lg text-slate-700 transition shadow-sm"
+              >
+                Clinician Role
+              </button>
+              <button
+                type="button"
+                onClick={() => onBypass('patient')}
+                id="bypass-patient"
+                className="col-span-2 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold rounded-lg text-slate-700 transition shadow-sm"
+              >
+                Patient Role
               </button>
             </div>
           </div>}
