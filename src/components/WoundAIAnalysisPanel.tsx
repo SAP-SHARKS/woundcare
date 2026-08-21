@@ -11,6 +11,7 @@ interface Props {
   exudate?: string;
   onApply: (suggestions: { length?: number; width?: number; granulation?: number; slough?: number; eschar?: number; epithelial?: number }) => void;
   onAnalysisStored?: (analysisId: string) => void;
+  onResult?: (result: WoundAIResult) => void;
 }
 
 export default function WoundAIAnalysisPanel(props: Props) {
@@ -20,7 +21,7 @@ export default function WoundAIAnalysisPanel(props: Props) {
   async function run() {
     if (!props.file) return setError('Capture or upload a wound image first.');
     setBusy(true); setError('');
-    try { const next = await analyzeWoundImage({ ...props, file: props.file }); setResult(next); if (next.analysisId) props.onAnalysisStored?.(next.analysisId); }
+    try { const next = await analyzeWoundImage({ ...props, file: props.file }); setResult(next); props.onResult?.(next); if (next.analysisId) props.onAnalysisStored?.(next.analysisId); }
     catch (e) { setError(e instanceof Error ? e.message : 'Analysis failed.'); }
     finally { setBusy(false); }
   }
