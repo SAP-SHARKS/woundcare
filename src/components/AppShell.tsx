@@ -25,6 +25,7 @@ import AIAnalysisReview from './AIAnalysisReview';
 import DocumentLibrary from './DocumentLibrary';
 import OfflineModeSettings from './OfflineModeSettings';
 import PreviewDataScreen from './PreviewDataScreen';
+import InstallAppButton from './InstallAppButton';
 
 type Screen =
   | { name: 'dashboard' }
@@ -57,6 +58,7 @@ interface PatientResult {
 
 interface Props {
   auth: AuthState;
+  onExitPreview: () => void;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -69,7 +71,7 @@ const ROLE_LABELS: Record<string, string> = {
   clinician: 'Clinician',
 };
 
-export default function AppShell({ auth }: Props) {
+export default function AppShell({ auth, onExitPreview }: Props) {
   const [screen, setScreen] = useState<Screen>({ name: 'patients' });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,6 +85,14 @@ export default function AppShell({ auth }: Props) {
   const role = auth.role ?? 'patient';
 
   const navItems = getNavItems(role);
+
+  async function handleSignOut() {
+    if (auth.user?.id === 'bypass-user-id') {
+      onExitPreview();
+      return;
+    }
+    await signOut();
+  }
 
   // Debounced search effect
   useEffect(() => {
@@ -243,7 +253,7 @@ export default function AppShell({ auth }: Props) {
             <p className="text-xs text-slate-400">{ROLE_LABELS[role] ?? role}</p>
           </div>
           <button
-            onClick={() => signOut()}
+            onClick={() => void handleSignOut()}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all"
           >
             <LogOut className="w-[18px] h-[18px]" />
@@ -285,7 +295,7 @@ export default function AppShell({ auth }: Props) {
               ))}
             </nav>
             <div className="p-3 border-t border-slate-100">
-              <button onClick={() => signOut()} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-500 hover:bg-red-50 hover:text-red-600">
+              <button onClick={() => void handleSignOut()} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-500 hover:bg-red-50 hover:text-red-600">
                 <LogOut className="w-[18px] h-[18px]" />
                 Sign out
               </button>
@@ -308,6 +318,7 @@ export default function AppShell({ auth }: Props) {
               </h2>
             </div>
             <div className="flex items-center gap-2">
+              <InstallAppButton />
               {/* Desktop search */}
               <div ref={searchContainerRef} className="hidden sm:block relative">
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200 focus-within:border-teal-400 focus-within:ring-1 focus-within:ring-teal-400 transition-all">

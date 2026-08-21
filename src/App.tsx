@@ -48,5 +48,5 @@ export default function App() {
     return <AuthPage onBypass={handleBypass} />;
   }
 
-  return <AppShell auth={activeAuth} />;
+  return <AppShell auth={activeAuth} onExitPreview={() => setBypassAuth(null)} />;
 }
