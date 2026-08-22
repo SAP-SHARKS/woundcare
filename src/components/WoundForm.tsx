@@ -283,7 +283,7 @@ export default function WoundForm({ wound, patientId, organizationId, onClose, o
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50">
+        <div className="px-4 sm:px-6 py-4 border-t border-slate-100 flex flex-wrap items-center justify-end gap-3 bg-slate-50">
           <button
             type="button"
             onClick={onClose}

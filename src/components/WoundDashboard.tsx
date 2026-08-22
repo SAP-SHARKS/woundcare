@@ -98,10 +98,10 @@ export default function WoundDashboard({
   const epithelial = latestAssessment?.epithelial_pct ?? 0;
 
   return (
-    <div className="border-t border-slate-100 p-5 space-y-6 bg-slate-50/30">
+    <div className="min-w-0 border-t border-slate-100 p-3 sm:p-5 space-y-6 bg-slate-50/30">
       {/* Top action row */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="min-w-0">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Longitudinal Clinical Summary</h4>
           {latestAssessment && (
             <p className="text-xs text-slate-500 mt-0.5">
@@ -109,25 +109,25 @@ export default function WoundDashboard({
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="mobile-swipe-row w-full sm:w-auto">
           {sortedAssessments.length >= 2 && (
             <button
               onClick={onCompare}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50 transition shadow-sm"
+              className="shrink-0 snap-start flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50 transition shadow-sm whitespace-nowrap"
             >
               <ArrowRightLeft className="w-3.5 h-3.5 text-slate-500" /> Compare Visits
             </button>
           )}
           <button
             onClick={onEditWound}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50 transition shadow-sm"
+            className="shrink-0 snap-start flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-50 transition shadow-sm whitespace-nowrap"
           >
             <Edit className="w-3.5 h-3.5 text-slate-550" /> Edit Wound
           </button>
           {wound.status === 'active' && (
             <button
               onClick={onNewAssessment}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-650 text-white text-xs font-semibold rounded-lg hover:bg-teal-700 transition shadow-sm"
+              className="shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-650 text-white text-xs font-semibold rounded-lg hover:bg-teal-700 transition shadow-sm whitespace-nowrap"
             >
               <ClipboardPlus className="w-3.5 h-3.5" /> New Assessment
             </button>
@@ -141,7 +141,7 @@ export default function WoundDashboard({
           <div><h4 className="text-sm font-bold text-slate-900">Photo timeline</h4><p className="text-[11px] text-slate-500 mt-0.5">Choose the baseline and current visits to compare.</p></div>
           <span className="text-[10px] font-mono text-slate-500">Visual comparison · scale only comparable when calibrated</span>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+        <div className="mobile-swipe-row pb-2" aria-label="Wound photo timeline">
           {sortedAssessments.map((assessment, index) => {
             const previous = sortedAssessments[index - 1];
             const change = percentChange(previous?.area_cm2, assessment.area_cm2);
@@ -162,8 +162,8 @@ export default function WoundDashboard({
         </div>
 
         {baseline && current && <div className="border-t border-slate-100 pt-5 space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            {[{label:'Baseline',assessment:baseline},{label:'Current',assessment:current}].map(({label,assessment}) => <article key={label} className="overflow-hidden rounded-xl border border-slate-200 bg-stone-50">
+          <div className="flex md:grid md:grid-cols-2 gap-4 overflow-x-auto md:overflow-visible snap-x snap-mandatory touch-pan-x">
+            {[{label:'Baseline',assessment:baseline},{label:'Current',assessment:current}].map(({label,assessment}) => <article key={label} className="min-w-[88%] md:min-w-0 snap-center overflow-hidden rounded-xl border border-slate-200 bg-stone-50">
               <div className="flex items-center justify-between border-b bg-white px-3 py-2"><b className="text-xs">{label}</b><span className="text-[10px] font-mono text-slate-500">{new Date(assessment.assessment_date).toLocaleDateString()}</span></div>
               <div className="h-56 sm:h-72 grid place-items-center bg-stone-100">{signedImages[assessment.id] ? <img src={signedImages[assessment.id]} alt={label} className="h-full w-full object-contain"/> : <div className="text-center text-xs text-stone-400"><ImageIcon className="mx-auto mb-2"/>No photograph stored for this visit</div>}</div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 text-xs"><Metric label="Area" value={`${Number(assessment.area_cm2 || 0).toFixed(1)} cm²`}/><Metric label="Dimensions" value={`${assessment.length_cm ?? '—'} × ${assessment.width_cm ?? '—'} cm`}/><Metric label="Granulation" value={`${assessment.granulation_pct ?? 0}%`}/><Metric label="Slough / eschar" value={`${assessment.slough_pct ?? 0}% / ${assessment.eschar_pct ?? 0}%`}/></div>

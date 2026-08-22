@@ -202,7 +202,7 @@ export default function PatientForm({ patient, organizationId, onClose, onSaved 
         </div>
 
         {/* Tab Selection */}
-        <div className="flex px-6 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex px-3 sm:px-6 border-b border-slate-100 bg-slate-50/50 overflow-x-auto snap-x touch-pan-x">
           {(
             [
               { key: 'demographics', label: 'Demographics', icon: User },
@@ -214,7 +214,7 @@ export default function PatientForm({ patient, organizationId, onClose, onSaved 
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
+              className={`shrink-0 snap-start flex items-center gap-1.5 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${ 
                 activeTab === tab.key
                   ? 'border-teal-600 text-teal-700 font-bold bg-white'
                   : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -262,7 +262,7 @@ export default function PatientForm({ patient, organizationId, onClose, onSaved 
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-slate-600 mb-1">MRN</label>
                   <input
@@ -355,7 +355,7 @@ export default function PatientForm({ patient, organizationId, onClose, onSaved 
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-slate-600 mb-1">Address</label>
                   <input
@@ -559,7 +559,7 @@ export default function PatientForm({ patient, organizationId, onClose, onSaved 
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50">
+        <div className="px-4 sm:px-6 py-4 border-t border-slate-100 flex flex-wrap items-center justify-end gap-3 bg-slate-50">
           <button
             type="button"
             onClick={onClose}

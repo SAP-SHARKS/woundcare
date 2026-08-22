@@ -187,11 +187,11 @@ export default function ReportsView({ organizationId: _organizationId }: Props) 
           ))}
 
           {/* Compliance breakdown */}
-          <div className="md:col-span-3 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="md:col-span-3 bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm touch-pan-x">
             <div className="px-5 py-3 border-b border-slate-250 bg-slate-50/50 text-xs font-bold text-slate-700 uppercase tracking-wider">
               Staff Assessment Compliance Log
             </div>
-            <table className="w-full text-xs text-left">
+            <table className="w-full min-w-[680px] text-xs text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
                   <th className="px-5 py-3">Clinician Name</th>

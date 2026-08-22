@@ -216,18 +216,18 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
             <ArrowLeft className="w-4 h-4" /> Back to Patients
           </button>
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 min-w-0">
               <div className="w-11 h-11 rounded-full bg-teal-600 flex items-center justify-center flex-shrink-0">
                 <User className="w-5 h-5 text-white" />
               </div>
-              <div>
-                <h1 className="text-lg font-semibold text-slate-900">{p.full_name}</h1>
+              <div className="min-w-0">
+                <h1 className="text-lg font-semibold text-slate-900 break-words">{p.full_name}</h1>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500 mt-0.5">
                   {p.mrn && <span>MRN: <span className="font-medium text-slate-700">{p.mrn}</span></span>}
                   {patientAge != null && <span>{patientAge}y</span>}
                   {p.sex && <span className="capitalize">{p.sex}</span>}
                 </div>
-                <div className="flex flex-wrap gap-1.5 mt-2">
+                <div className="mobile-swipe-row sm:flex-wrap mt-2" aria-label="Patient conditions">
                   {conditions.map(c => <ConditionBadge key={c.label} {...c} />)}
                   {hasHighRisk && (
                     <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
@@ -237,14 +237,14 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
                 </div>
               </div>
             </div>
-            <div className="flex gap-2 self-start">
-              {activeWounds[0] && <button onClick={() => setAssessmentWoundId(activeWounds[0].id)} className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 text-white text-sm font-semibold rounded-lg hover:bg-teal-800 transition-colors shadow-sm">
+            <div className="mobile-swipe-row w-full sm:w-auto sm:self-start">
+              {activeWounds[0] && <button onClick={() => setAssessmentWoundId(activeWounds[0].id)} className="shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-2 bg-teal-700 text-white text-sm font-semibold rounded-lg hover:bg-teal-800 transition-colors shadow-sm whitespace-nowrap">
                 <ClipboardPlus className="w-4 h-4" /> New Check-in
               </button>}
-              <button onClick={() => setShowEditPatient(true)} className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
+              <button onClick={() => setShowEditPatient(true)} className="shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm whitespace-nowrap">
                 <Edit className="w-4 h-4 text-slate-500" /> Edit Profile
               </button>
-              <button onClick={() => setShowNewWound(true)} className="flex items-center gap-1.5 px-3.5 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 active:bg-teal-800 transition-colors shadow-sm">
+              <button onClick={() => setShowNewWound(true)} className="shrink-0 snap-start flex items-center gap-1.5 px-3.5 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 active:bg-teal-800 transition-colors shadow-sm whitespace-nowrap">
                 <Plus className="w-4 h-4" /> New Wound
               </button>
             </div>
@@ -315,7 +315,7 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
                         <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{fmtDate(w.date_first_observed)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
                       {lastA && <span className="text-xs font-medium text-slate-700">{Number(lastA.area_cm2).toFixed(1)} cm²</span>}
                       <MiniSparkline values={wa.map((a: any) => Number(a.area_cm2 ?? 0))} />
                       <AreaTrend assessments={wa} />

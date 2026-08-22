@@ -285,7 +285,7 @@ export default function AssessmentForm({
   const qualityTone = qualityStatus === 'Passed' ? 'success' : qualityStatus === 'Rejected' ? 'danger' : qualityResult ? 'warning' : 'neutral';
   return (
     <div className="fixed inset-0 z-50 bg-[#f7f6f2] overflow-y-auto flex flex-col min-h-screen text-stone-800 font-sans">
-      <header className="bg-white border-b border-stone-200/80 px-6 sm:px-10 py-4 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+      <header className="bg-white border-b border-stone-200/80 px-4 sm:px-10 py-4 flex items-center justify-between gap-3 sticky top-0 z-20 shadow-sm">
         <div>
           <p className="text-[11px] font-mono tracking-wider text-stone-500 uppercase">NEW WOUND CHECK-IN</p>
           <h1 className="text-xl sm:text-2xl font-bold text-stone-900 flex items-center gap-2 mt-0.5">
@@ -301,14 +301,14 @@ export default function AssessmentForm({
         </button>
       </header>
 
-      <div className="bg-white border-b border-stone-200/80 px-6 sm:px-10 py-3 sticky top-[73px] z-10">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+      <div className="bg-white border-b border-stone-200/80 px-4 sm:px-10 py-3 sticky top-[73px] z-10">
+        <div className="max-w-7xl mx-auto flex sm:grid sm:grid-cols-5 gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible snap-x touch-pan-x">
           {steps.map(([title, subtitle], index) => (
             <button
               key={title}
               type="button"
               onClick={() => index < step && setStep(index)}
-              className={`text-left pb-1.5 border-b-2 transition-all ${
+              className={`min-w-[145px] sm:min-w-0 snap-start text-left pb-1.5 border-b-2 transition-all ${ 
                 index === step
                   ? 'border-[#1e6b66] text-[#1e6b66]'
                   : index < step
@@ -336,7 +336,7 @@ export default function AssessmentForm({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-7xl mx-auto w-full p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6">
+      <form onSubmit={handleSubmit} className="max-w-7xl mx-auto w-full min-w-0 p-3 sm:p-8 flex-1 flex flex-col justify-between space-y-6">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-4 py-3 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" /> {error}
@@ -576,7 +576,7 @@ export default function AssessmentForm({
                     ['eschar_pct', 'Eschar', '#4a433e'],
                     ['epithelial_pct', 'Epithelial', '#e5a795'],
                   ] as const).map(([key, label, color]) => (
-                    <div key={key} className="grid grid-cols-[minmax(118px,220px)_minmax(120px,1fr)_48px] sm:grid-cols-[240px_minmax(180px,1fr)_64px] items-center gap-3 sm:gap-5">
+                    <div key={key} className="grid grid-cols-[90px_minmax(0,1fr)_40px] sm:grid-cols-[240px_minmax(180px,1fr)_64px] items-center gap-2 sm:gap-5">
                       <span className="flex items-center gap-3 text-sm font-medium text-stone-800"><span className="w-3 h-3 rounded-[4px] shrink-0" style={{ backgroundColor: color }}/>{label}</span>
                       <input aria-label={`${label} percentage`} type="range" min="0" max="100" step="5" value={form[key]} onChange={e => set(key, parseInt(e.target.value))} className="w-full accent-[#237b76]" />
                       <output className="font-mono text-sm font-bold text-stone-900 text-right">{form[key]}%</output>
@@ -691,9 +691,9 @@ export default function AssessmentForm({
           </div>
         )}
 
-        <footer className="bg-white border-t border-stone-200/80 rounded-2xl px-6 py-4 flex items-center justify-between shadow-sm mt-auto">
+        <footer className="bg-white border-t border-stone-200/80 rounded-2xl px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm mt-auto">
           <span className="text-xs text-stone-400 font-mono">{uploadProgress || `Draft autosaves. Step ${step + 1} of 5.`}</span>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             {step > 0 && (
               <button
                 type="button"

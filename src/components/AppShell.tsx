@@ -288,16 +288,21 @@ export default function AppShell({ auth, onExitPreview }: Props) {
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/30" onClick={() => setSidebarOpen(false)} />
           <aside className="absolute inset-y-0 left-0 w-72 bg-white shadow-xl flex flex-col">
-            <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
+            <div className="px-4 h-[58px] flex items-center gap-3 border-b border-slate-100">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Close navigation menu"
+                className="w-9 h-9 flex-shrink-0 inline-flex items-center justify-center rounded-full border border-teal-600 text-teal-700 hover:bg-teal-50 active:bg-teal-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center">
                   <Activity className="w-4.5 h-4.5 text-white" />
                 </div>
-                <h1 className="text-sm font-semibold text-slate-900">WoundCare</h1>
+                <h1 className="text-sm font-semibold text-slate-900 truncate">WoundCare</h1>
               </div>
-              <button onClick={() => setSidebarOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-lg">
-                <X className="w-5 h-5 text-slate-400" />
-              </button>
             </div>
             <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
               {navItems.map(item => (
@@ -326,12 +331,12 @@ export default function AppShell({ auth, onExitPreview }: Props) {
       )}
 
       {/* Main content */}
-      <main className="flex-1 lg:ml-[238px]">
+      <main className="flex-1 min-w-0 lg:ml-[238px]">
         {/* Top bar */}
         <header className="sticky top-0 z-20 bg-[#fffefc] border-b border-stone-200">
           <div className="px-4 sm:px-6 h-[58px] flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1.5 hover:bg-slate-100 rounded-lg">
+              <button type="button" onClick={() => setSidebarOpen(true)} aria-label="Open navigation menu" className="lg:hidden w-9 h-9 inline-flex items-center justify-center hover:bg-slate-100 rounded-lg">
                 <Menu className="w-5 h-5 text-slate-600" />
               </button>
               <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 min-w-0 text-sm">
@@ -426,7 +431,7 @@ export default function AppShell({ auth, onExitPreview }: Props) {
           )}
         </header>
 
-        <div className="p-4 sm:p-7 pb-11">
+        <div className="min-w-0 overflow-x-clip p-3 sm:p-7 pb-11">
           {renderScreen(screen, auth, navigate, () => setClinicIdentityVersion((version) => version + 1))}
         </div>
       </main>

@@ -110,7 +110,7 @@ export default function AIAnalysisReview({
           </div>
 
           {/* Photograph Display with Simulated Segmentation Overlay */}
-          <div className="flex-1 flex items-center justify-center p-6 relative bg-black/50">
+          <div className="flex-1 flex items-center justify-center p-3 sm:p-6 relative bg-black/50">
             {/* The base image */}
             <img
               src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=600"
@@ -121,7 +121,7 @@ export default function AIAnalysisReview({
             {/* Simulated overlay (drawn as semi-transparent colored polygons/regions over the wound site) */}
             {showOverlay && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-6">
-                <div className="relative w-[300px] h-[300px]">
+                <div className="relative w-full max-w-[300px] aspect-square">
                   {/* Granulation Area (Reddish/Pink overlay) */}
                   <div className="absolute top-[35%] left-[25%] w-[120px] h-[90px] bg-red-500/35 border-2 border-red-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold backdrop-blur-[1px]">
                     Granulation (64%)
@@ -152,7 +152,7 @@ export default function AIAnalysisReview({
           </div>
 
           {/* Quality controls */}
-          <div className="px-5 py-3 border-t border-slate-900 bg-slate-950/80 grid grid-cols-3 gap-4 text-xs text-slate-400">
+          <div className="px-4 sm:px-5 py-3 border-t border-slate-900 bg-slate-950/80 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs text-slate-400">
             <div>
               <span className="text-[10px] text-slate-500 block uppercase">Image Focus</span>
               <span className="text-slate-200 font-semibold mt-0.5 block">92% (High / Sharp)</span>
@@ -184,7 +184,7 @@ export default function AIAnalysisReview({
             </div>
 
             {editingMeasurements ? (
-              <div className="grid grid-cols-3 gap-3 bg-slate-950/50 p-4 rounded-xl border border-slate-850">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-950/50 p-4 rounded-xl border border-slate-850">
                 <div>
                   <label className="block text-[10px] text-slate-400 mb-1">Length (cm)</label>
                   <input

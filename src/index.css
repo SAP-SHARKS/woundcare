@@ -3,6 +3,8 @@
 @tailwind utilities;
 
 @layer base {
+  *, *::before, *::after { min-width:0; }
+  input, select, textarea, button { max-width:100%; }
   :root { font-family: "DM Sans", Inter, ui-sans-serif, system-ui, sans-serif; color:#1c1917; background:#f7f5f2; }
   html, body, #root { max-width:100%; min-height:100%; overflow-x:hidden; }
   body {
@@ -23,6 +25,20 @@
 @media(max-width:600px){.wt-kpis>button{min-width:0;padding:12px}}
 
 @layer utilities {
+  .mobile-swipe-row {
+    display:flex;
+    gap:.5rem;
+    max-width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scroll-snap-type:x mandatory;
+    scroll-padding-inline:.25rem;
+    overscroll-behavior-inline:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .mobile-swipe-row::-webkit-scrollbar { display:none; }
+  .mobile-swipe-row > * { scroll-snap-align:start; }
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: theme('colors.slate.300') transparent;

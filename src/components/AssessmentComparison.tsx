@@ -130,10 +130,10 @@ export default function AssessmentComparison({ wound, assessments, onClose }: Pr
       </div>
 
       {/* Comparison Grid */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[55vh]">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-6">
+        <div className="flex md:grid md:grid-cols-2 gap-4 sm:gap-6 h-[55vh] overflow-x-auto md:overflow-visible snap-x snap-mandatory touch-pan-x">
           {/* Left Panel */}
-          <div className="bg-slate-950/80 rounded-xl border border-slate-850 overflow-hidden flex flex-col h-full">
+          <div className="min-w-[90%] md:min-w-0 snap-center bg-slate-950/80 rounded-xl border border-slate-850 overflow-hidden flex flex-col h-full">
             <div className="px-4 py-3 bg-slate-950 border-b border-slate-850 flex items-center justify-between text-xs font-bold text-slate-300">
               <span>VISIT A: {leftAsmt ? localFmtDate(leftAsmt.assessment_date) : 'N/A'}</span>
               <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400">{leftAsmt?.status}</span>
@@ -151,7 +151,7 @@ export default function AssessmentComparison({ wound, assessments, onClose }: Pr
           </div>
 
           {/* Right Panel */}
-          <div className="bg-slate-950/80 rounded-xl border border-slate-850 overflow-hidden flex flex-col h-full">
+          <div className="min-w-[90%] md:min-w-0 snap-center bg-slate-950/80 rounded-xl border border-slate-850 overflow-hidden flex flex-col h-full">
             <div className="px-4 py-3 bg-slate-950 border-b border-slate-850 flex items-center justify-between text-xs font-bold text-slate-300">
               <span>VISIT B: {rightAsmt ? localFmtDate(rightAsmt.assessment_date) : 'N/A'}</span>
               <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400">{rightAsmt?.status}</span>
@@ -174,7 +174,7 @@ export default function AssessmentComparison({ wound, assessments, onClose }: Pr
           <div className="space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-450 border-b border-slate-850 pb-2">Measurements Comparison</h3>
             
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-850">
                 <span className="text-[10px] font-bold text-slate-500 block uppercase">Surface Area</span>
                 <div className="mt-1 flex items-baseline gap-2">

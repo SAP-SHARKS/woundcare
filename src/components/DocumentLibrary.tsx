@@ -384,7 +384,7 @@ export default function DocumentLibrary({ organizationId, previewMode = false }:
 
       {/* Filters and Search Bar Controls */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative flex-1 min-w-0 w-full sm:min-w-[240px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             value={search}
