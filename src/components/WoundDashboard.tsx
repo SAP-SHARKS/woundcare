@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ClipboardPlus, Edit, Eye, Image as ImageIcon, Sparkles, AlertTriangle, ArrowRightLeft } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface Assessment {
   id: string;
@@ -43,6 +45,35 @@ export default function WoundDashboard({
 }: Props) {
   const sortedAssessments = [...assessments].sort((a, b) => a.assessment_date.localeCompare(b.assessment_date));
   const latestAssessment = sortedAssessments[sortedAssessments.length - 1];
+  const [baselineId, setBaselineId] = useState(sortedAssessments[0]?.id || '');
+  const [currentId, setCurrentId] = useState(sortedAssessments[sortedAssessments.length - 1]?.id || '');
+  const [signedImages, setSignedImages] = useState<Record<string, string>>({});
+  const baseline = sortedAssessments.find(assessment => assessment.id === baselineId);
+  const current = sortedAssessments.find(assessment => assessment.id === currentId);
+
+  useEffect(() => {
+    setBaselineId(previous => sortedAssessments.some(item => item.id === previous) ? previous : sortedAssessments[0]?.id || '');
+    setCurrentId(previous => sortedAssessments.some(item => item.id === previous) ? previous : sortedAssessments[sortedAssessments.length - 1]?.id || '');
+  }, [assessments]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadTimelineImages() {
+      const entries = await Promise.all(sortedAssessments.map(async assessment => {
+        const image = imagesByAssessment[assessment.id]?.[0];
+        if (!image) return [assessment.id, ''] as const;
+        if (image.public_url) return [assessment.id, image.public_url] as const;
+        const { data } = await supabase.storage.from('wound-images').createSignedUrl(image.storage_path, 900);
+        return [assessment.id, data?.signedUrl || ''] as const;
+      }));
+      if (active) setSignedImages(Object.fromEntries(entries));
+    }
+    void loadTimelineImages();
+    return () => { active = false; };
+  }, [assessments, imagesByAssessment]);
+
+  const percentChange = (from?: number, to?: number) => from && to != null ? Math.round(((to - from) / from) * 100) : null;
+  const pointChange = (from?: number, to?: number) => from != null && to != null ? to - from : null;
 
   // Calculate area trend
   let areaChangePct: number | null = null;
@@ -103,6 +134,55 @@ export default function WoundDashboard({
           )}
         </div>
       </div>
+
+      {/* Photo timeline and inline comparison */}
+      {sortedAssessments.length > 0 && <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div><h4 className="text-sm font-bold text-slate-900">Photo timeline</h4><p className="text-[11px] text-slate-500 mt-0.5">Choose the baseline and current visits to compare.</p></div>
+          <span className="text-[10px] font-mono text-slate-500">Visual comparison · scale only comparable when calibrated</span>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+          {sortedAssessments.map((assessment, index) => {
+            const previous = sortedAssessments[index - 1];
+            const change = percentChange(previous?.area_cm2, assessment.area_cm2);
+            const selected = assessment.id === baselineId || assessment.id === currentId;
+            return <article key={assessment.id} className={`w-44 shrink-0 snap-start overflow-hidden rounded-xl border ${selected ? 'border-teal-500 ring-1 ring-teal-200' : 'border-slate-200'}`}>
+              <button type="button" onClick={() => setCurrentId(assessment.id)} className="relative block h-28 w-full bg-stone-100 text-left">
+                {signedImages[assessment.id] ? <img src={signedImages[assessment.id]} alt={`Wound on ${assessment.assessment_date}`} className="h-full w-full object-cover"/> : <span className="grid h-full place-items-center"><ImageIcon className="w-7 h-7 text-stone-300"/></span>}
+                {assessment.id === baselineId && <span className="absolute left-2 top-2 rounded bg-stone-800/80 px-2 py-1 text-[9px] font-bold text-white">BASELINE</span>}
+                {assessment.id === currentId && <span className="absolute right-2 top-2 rounded bg-teal-700 px-2 py-1 text-[9px] font-bold text-white">CURRENT</span>}
+              </button>
+              <div className="p-3">
+                <p className="text-[10px] font-mono text-slate-500">{new Date(assessment.assessment_date).toLocaleDateString()}</p>
+                <div className="mt-1 flex items-end justify-between"><strong className="text-sm text-slate-900">{Number(assessment.area_cm2 || 0).toFixed(1)} cm²</strong><span className={`text-[10px] font-bold ${change == null ? 'text-slate-400' : change <= 0 ? 'text-emerald-700' : 'text-red-600'}`}>{change == null ? 'baseline' : `${change > 0 ? '+' : ''}${change}%`}</span></div>
+                <div className="mt-2 flex gap-1"><button type="button" onClick={() => setBaselineId(assessment.id)} className="flex-1 rounded border px-1.5 py-1 text-[9px] font-semibold hover:bg-slate-50">Set baseline</button><button type="button" onClick={() => setCurrentId(assessment.id)} className="flex-1 rounded border px-1.5 py-1 text-[9px] font-semibold hover:bg-slate-50">Compare</button></div>
+              </div>
+            </article>;
+          })}
+        </div>
+
+        {baseline && current && <div className="border-t border-slate-100 pt-5 space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            {[{label:'Baseline',assessment:baseline},{label:'Current',assessment:current}].map(({label,assessment}) => <article key={label} className="overflow-hidden rounded-xl border border-slate-200 bg-stone-50">
+              <div className="flex items-center justify-between border-b bg-white px-3 py-2"><b className="text-xs">{label}</b><span className="text-[10px] font-mono text-slate-500">{new Date(assessment.assessment_date).toLocaleDateString()}</span></div>
+              <div className="h-56 sm:h-72 grid place-items-center bg-stone-100">{signedImages[assessment.id] ? <img src={signedImages[assessment.id]} alt={label} className="h-full w-full object-contain"/> : <div className="text-center text-xs text-stone-400"><ImageIcon className="mx-auto mb-2"/>No photograph stored for this visit</div>}</div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 text-xs"><Metric label="Area" value={`${Number(assessment.area_cm2 || 0).toFixed(1)} cm²`}/><Metric label="Dimensions" value={`${assessment.length_cm ?? '—'} × ${assessment.width_cm ?? '—'} cm`}/><Metric label="Granulation" value={`${assessment.granulation_pct ?? 0}%`}/><Metric label="Slough / eschar" value={`${assessment.slough_pct ?? 0}% / ${assessment.eschar_pct ?? 0}%`}/></div>
+            </article>)}
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+            <Delta label="Area" value={percentChange(baseline.area_cm2,current.area_cm2)} suffix="%" inverse/>
+            <Delta label="Granulation" value={pointChange(baseline.granulation_pct,current.granulation_pct)} suffix=" pts"/>
+            <Delta label="Slough" value={pointChange(baseline.slough_pct,current.slough_pct)} suffix=" pts" inverse/>
+            <Delta label="Eschar" value={pointChange(baseline.eschar_pct,current.eschar_pct)} suffix=" pts" inverse/>
+            <Delta label="Pain" value={pointChange(baseline.pain_score,current.pain_score)} suffix=" /10" inverse/>
+          </div>
+          {(baseline.clinical_notes || current.clinical_notes || current.signs_requiring_review) && <div className="grid md:grid-cols-2 gap-3">
+            <div className="rounded-xl border border-slate-200 p-3"><span className="text-[9px] font-bold uppercase text-slate-400">Baseline clinical note</span><p className="mt-1.5 text-xs leading-5 text-slate-600">{baseline.clinical_notes || 'No clinical note recorded.'}</p></div>
+            <div className={`rounded-xl border p-3 ${current.signs_requiring_review ? 'border-amber-200 bg-amber-50' : 'border-slate-200'}`}><span className="text-[9px] font-bold uppercase text-slate-400">Current clinical note</span><p className="mt-1.5 text-xs leading-5 text-slate-600">{current.clinical_notes || 'No clinical note recorded.'}</p>{current.signs_requiring_review && <p className="mt-2 text-xs font-semibold text-amber-800"><AlertTriangle className="mr-1 inline w-3.5 h-3.5"/>{current.signs_requiring_review}</p>}</div>
+          </div>}
+          <button type="button" onClick={onCompare} className="wt-button"><ArrowRightLeft className="w-3.5 h-3.5"/>Open detailed comparison</button>
+        </div>}
+      </section>}
 
       {/* Overview Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -218,7 +298,7 @@ export default function WoundDashboard({
             <div className="mt-3.5 bg-teal-50/50 border border-teal-100 rounded-lg p-2.5 flex items-start gap-2">
               <Sparkles className="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5" />
               <div className="text-[11px] text-teal-850">
-                <span className="font-bold">AI Note:</span> {latestAssessment.area_cm2 < 5 ? 'Stable progression. Granulation tissue shows a healthy red color bed. Exudate is minimum.' : 'Wound area exceeds 5.0cm² threshold; monitor border margins.'}
+                <span className="font-bold">Recorded summary:</span> {Number(latestAssessment.area_cm2 || 0).toFixed(1)} cm²; granulation {latestAssessment.granulation_pct ?? 0}%; slough {latestAssessment.slough_pct ?? 0}%; eschar {latestAssessment.eschar_pct ?? 0}%. Clinician confirmation remains authoritative.
               </div>
             </div>
           )}
@@ -330,4 +410,13 @@ export default function WoundDashboard({
       </div>
     </div>
   );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return <div><span className="block text-[9px] font-bold uppercase tracking-wide text-slate-400">{label}</span><strong className="mt-1 block text-xs text-slate-800">{value}</strong></div>;
+}
+
+function Delta({ label, value, suffix, inverse = false }: { label: string; value: number | null; suffix: string; inverse?: boolean }) {
+  const favorable = value != null && (inverse ? value <= 0 : value >= 0);
+  return <div className="rounded-lg border border-slate-200 bg-slate-50 p-3"><span className="block text-[9px] font-bold uppercase text-slate-400">{label} change</span><strong className={`mt-1 block text-sm ${value == null ? 'text-slate-500' : favorable ? 'text-emerald-700' : 'text-red-600'}`}>{value == null ? '—' : `${value > 0 ? '+' : ''}${value}${suffix}`}</strong></div>;
 }

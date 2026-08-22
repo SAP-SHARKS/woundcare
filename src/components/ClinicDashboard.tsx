@@ -125,10 +125,10 @@ export default function ClinicDashboard({ organizationId, onNavigate }: Props) {
   }
 
   const summaryCards = [
-    { label: 'Active Patients', value: stats.activePatients, icon: Users,          accent: 'bg-teal-50 text-teal-600' },
-    { label: 'Active Wounds',   value: stats.activeWounds,   icon: Heart,          accent: 'bg-rose-50 text-rose-600' },
-    { label: 'Need Review',     value: stats.pendingReview,  icon: ClipboardCheck, accent: 'bg-amber-50 text-amber-600' },
-    { label: 'High Risk',       value: stats.highRisk,       icon: AlertTriangle,  accent: 'bg-red-50 text-red-600' },
+    { label: 'Active Patients', value: stats.activePatients, icon: Users,          accent: 'bg-teal-50 text-teal-600', target: { name: 'patients' } },
+    { label: 'Active Wounds',   value: stats.activeWounds,   icon: Heart,          accent: 'bg-rose-50 text-rose-600', target: { name: 'patients' } },
+    { label: 'Need Review',     value: stats.pendingReview,  icon: ClipboardCheck, accent: 'bg-amber-50 text-amber-600', target: { name: 'command_center' } },
+    { label: 'High Risk',       value: stats.highRisk,       icon: AlertTriangle,  accent: 'bg-red-50 text-red-600', target: { name: 'command_center' } },
   ];
 
   const urgent = woundInfos.filter(i => i.category === 'worsening');
@@ -146,7 +146,7 @@ export default function ClinicDashboard({ organizationId, onNavigate }: Props) {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {summaryCards.map(c => (
-          <div key={c.label} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition-shadow">
+          <button type="button" onClick={() => onNavigate(c.target)} key={c.label} className="w-full text-left bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-teal-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-all">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">{c.label}</span>
               <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${c.accent}`}>
@@ -154,7 +154,7 @@ export default function ClinicDashboard({ organizationId, onNavigate }: Props) {
               </div>
             </div>
             <p className="text-2xl font-semibold text-slate-900">{c.value}</p>
-          </div>
+          </button>
         ))}
       </div>
 

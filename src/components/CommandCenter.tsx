@@ -217,18 +217,18 @@ export default function CommandCenter({ organizationId, onSelectPatient, onNavig
       {/* Overview stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Active Wounds', value: triageItems.length + 8, icon: Activity, color: 'text-slate-700', bg: 'bg-white' },
-          { label: 'Critical Cases', value: criticalCount, icon: ShieldAlert, color: 'text-red-600', bg: 'bg-red-50/20 border-red-100' },
-          { label: 'Worsening Trends', value: worseningCount, icon: Bell, color: 'text-amber-600', bg: 'bg-amber-50/20 border-amber-100' },
-          { label: 'Overdue Assessments', value: overdueCount, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50/20 border-blue-100' },
+          { label: 'Active Wounds', value: triageItems.length + 8, icon: Activity, color: 'text-slate-700', bg: 'bg-white', tab: 'all' as const },
+          { label: 'Critical Cases', value: criticalCount, icon: ShieldAlert, color: 'text-red-600', bg: 'bg-red-50/20 border-red-100', tab: 'critical' as const },
+          { label: 'Worsening Trends', value: worseningCount, icon: Bell, color: 'text-amber-600', bg: 'bg-amber-50/20 border-amber-100', tab: 'worsening' as const },
+          { label: 'Overdue Assessments', value: overdueCount, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50/20 border-blue-100', tab: 'overdue' as const },
         ].map(card => (
-          <div key={card.label} className={`rounded-xl border border-slate-200 px-4.5 py-4 ${card.bg} shadow-sm`}>
+          <button type="button" onClick={() => setActiveTab(card.tab)} key={card.label} className={`w-full text-left rounded-xl border border-slate-200 px-4.5 py-4 ${card.bg} shadow-sm hover:shadow-md hover:border-teal-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-all`}>
             <div className="flex justify-between items-center text-slate-400">
               <span className="text-[11px] font-bold uppercase tracking-wider">{card.label}</span>
               <card.icon className={`w-4.5 h-4.5 ${card.color}`} />
             </div>
             <div className={`text-2xl font-bold mt-2 ${card.color}`}>{card.value}</div>
-          </div>
+          </button>
         ))}
       </div>
 

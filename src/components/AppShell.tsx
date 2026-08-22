@@ -547,7 +547,7 @@ function renderScreen(
     return <DocumentLibrary organizationId={null} previewMode />;
   }
   if (auth.user?.id === 'bypass-user-id' && previewScreens.some(name => name === screen.name)) {
-    return <PreviewDataScreen screen={screen.name as (typeof previewScreens)[number]} />;
+    return <PreviewDataScreen screen={screen.name as (typeof previewScreens)[number]} onNavigate={navigate} />;
   }
 
   switch (screen.name) {

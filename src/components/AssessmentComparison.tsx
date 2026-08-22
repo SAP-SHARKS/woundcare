@@ -33,8 +33,8 @@ export default function AssessmentComparison({ wound, assessments, onClose }: Pr
   const sorted = [...assessments].sort((a, b) => b.assessment_date.localeCompare(a.assessment_date));
   
   // Left and Right selection states (defaults to last two assessments)
-  const [leftId, setLeftId] = useState<string>(sorted[0]?.id || '');
-  const [rightId, setRightId] = useState<string>(sorted[1]?.id || sorted[0]?.id || '');
+  const [leftId, setLeftId] = useState<string>(sorted[sorted.length - 1]?.id || '');
+  const [rightId, setRightId] = useState<string>(sorted[0]?.id || '');
   
   const [leftImage, setLeftImage] = useState<string | null>(null);
   const [rightImage, setRightImage] = useState<string | null>(null);

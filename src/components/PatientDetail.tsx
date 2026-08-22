@@ -102,7 +102,9 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
         { id: 'demo-a2', wound_id: demoWound.id, assessment_date: '2026-05-22', area_cm2: 9.8, granulation_pct: 58, slough_pct: 34, eschar_pct: 8, pain_score: 3, status: 'approved' },
         { id: 'demo-a3', wound_id: demoWound.id, assessment_date: '2026-06-05', area_cm2: 7.6, granulation_pct: 64, slough_pct: 28, eschar_pct: 8, pain_score: 3, status: 'pending_review' },
       ];
-      setPatient(demoPatient); setWounds([demoWound]); setAssessmentsByWound({ [demoWound.id]: demoAssessments }); setImagesByAssessment({}); setLoading(false); return;
+      setPatient(demoPatient); setWounds([demoWound]); setAssessmentsByWound({ [demoWound.id]: demoAssessments });
+      setImagesByAssessment({ 'demo-a3': [{ id:'demo-image-current', assessment_id:'demo-a3', public_url:'/uploads/wound-images/image.png' }] });
+      setExpandedWound(demoWound.id); setLoading(false); return;
     }
     try {
       const { data: p, error: pe } = await supabase.from('patients').select('*').eq('id', patientId).single();
@@ -112,6 +114,7 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
       const { data: w, error: we } = await supabase.from('wounds').select('*').eq('patient_id', patientId).order('created_at', { ascending: false });
       if (we) throw we;
       setWounds(w || []);
+      setExpandedWound(previous => previous || w?.find(item => item.status === 'active')?.id || w?.[0]?.id || null);
 
       if (w && w.length > 0) {
         const ids = w.map((x: any) => x.id);
@@ -255,17 +258,17 @@ export default function PatientDetail({ patientId, organizationId, onBack }: Pro
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Active Wounds', value: activeWounds.length, icon: Activity, color: 'text-teal-600' },
-            { label: 'High Risk', value: hasHighRisk ? 'Yes' : 'No', icon: AlertTriangle, color: hasHighRisk ? 'text-red-500' : 'text-emerald-600' },
-            { label: 'Last Assessment', value: fmtDate(lastAssessment), icon: Calendar, color: 'text-slate-700' },
-            { label: 'Next Review', value: fmtDate(nextReview), icon: Calendar, color: 'text-blue-600' },
+            { label: 'Active Wounds', value: activeWounds.length, icon: Activity, color: 'text-teal-600', tab: 'wounds' as const },
+            { label: 'High Risk', value: hasHighRisk ? 'Yes' : 'No', icon: AlertTriangle, color: hasHighRisk ? 'text-red-500' : 'text-emerald-600', tab: 'wounds' as const },
+            { label: 'Last Assessment', value: fmtDate(lastAssessment), icon: Calendar, color: 'text-slate-700', tab: 'assessments' as const },
+            { label: 'Next Review', value: fmtDate(nextReview), icon: Calendar, color: 'text-blue-600', tab: 'assessments' as const },
           ].map(s => (
-            <div key={s.label} className="bg-white rounded-xl border border-slate-200 px-4 py-3">
+            <button type="button" onClick={() => setTab(s.tab)} key={s.label} className="w-full text-left bg-white rounded-xl border border-slate-200 px-4 py-3 hover:border-teal-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-all">
               <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">
                 <s.icon className="w-3.5 h-3.5" /> {s.label}
               </div>
               <div className={`text-base font-semibold ${s.color}`}>{s.value}</div>
-            </div>
+            </button>
           ))}
         </div>
 

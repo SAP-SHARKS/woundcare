@@ -38,10 +38,10 @@ export default function SuperAdminDashboard({ onNavigate }: Props) {
   }
 
   const cards = [
-    { label: 'Organizations', value: stats.orgs, icon: Building2, color: 'bg-teal-50 text-teal-600' },
-    { label: 'Total Users', value: stats.users, icon: Users, color: 'bg-blue-50 text-blue-600' },
-    { label: 'Active Patients', value: stats.patients, icon: Heart, color: 'bg-rose-50 text-rose-600' },
-    { label: 'System Health', value: 'Operational', icon: Activity, color: 'bg-emerald-50 text-emerald-600', isText: true },
+    { label: 'Organizations', value: stats.orgs, icon: Building2, color: 'bg-teal-50 text-teal-600', target: { name: 'organizations' } },
+    { label: 'Total Users', value: stats.users, icon: Users, color: 'bg-blue-50 text-blue-600', target: { name: 'staff' } },
+    { label: 'Active Patients', value: stats.patients, icon: Heart, color: 'bg-rose-50 text-rose-600', target: { name: 'patients' } },
+    { label: 'System Health', value: 'Operational', icon: Activity, color: 'bg-emerald-50 text-emerald-600', isText: true, target: null },
   ];
 
   if (loading) {
@@ -61,7 +61,7 @@ export default function SuperAdminDashboard({ onNavigate }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map(card => (
-          <div key={card.label} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition-shadow">
+          <button type="button" disabled={!card.target} onClick={() => card.target && onNavigate(card.target)} key={card.label} className="w-full text-left bg-white rounded-xl border border-slate-200 p-5 enabled:hover:shadow-md enabled:hover:border-teal-300 enabled:cursor-pointer disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-all">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{card.label}</span>
               <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${card.color}`}>
@@ -71,7 +71,7 @@ export default function SuperAdminDashboard({ onNavigate }: Props) {
             <p className="text-2xl font-semibold text-slate-900">
               {card.isText ? card.value : card.value}
             </p>
-          </div>
+          </button>
         ))}
       </div>
 
